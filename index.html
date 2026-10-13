@@ -196,7 +196,11 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
   <!-- מבחן מדמה: בחירת מקצוע -->
   <section id="view-mock" class="view">
     <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 style="margin:0">🎯 מבחן מדמה</h1></div>
-    <p class="muted">10 שאלות אקראיות עם טיימר של 10 דקות — כמו הדבר האמיתי!</p>
+    <p class="muted">10 שאלות אקראיות — בחרו מצב ולחצו על המקצוע:</p>
+    <div class="btnrow" style="margin-bottom:10px">
+      <button class="btn small blue" id="mockModeTimed" style="flex:1">⏱️ עם טיימר (10 דקות)</button>
+      <button class="btn small ghost" id="mockModeRelaxed" style="flex:1">😌 בנחת — בלי טיימר</button>
+    </div>
     <div id="mockSubjects"></div>
   </section>
 
@@ -554,7 +558,14 @@ function renderGrades(){
 }
 
 // ---------- מבחן מדמה ----------
-let mockQs=[], mockIdx=0, mockScore=0, mockTimer=null, mockLeft=0;
+let mockQs=[], mockIdx=0, mockScore=0, mockTimer=null, mockLeft=0, mockRelaxed=false;
+function setMockMode(relaxed){
+  mockRelaxed = relaxed;
+  $("mockModeTimed").className = "btn small" + (relaxed ? " ghost" : " blue");
+  $("mockModeRelaxed").className = "btn small" + (relaxed ? " blue" : " ghost");
+}
+$("mockModeTimed").addEventListener("click", ()=>setMockMode(false));
+$("mockModeRelaxed").addEventListener("click", ()=>setMockMode(true));
 function renderMock(){
   show("mock");
   const box = $("mockSubjects"); box.innerHTML="";
@@ -575,17 +586,23 @@ function startMock(sid){
   const pool=[];
   TOPICS.forEach(t=>t.questions.forEach(qa=>pool.push({topic:t.title, q:qa[0]})));
   mockQs = shuffle(pool).slice(0,10);
-  mockIdx=0; mockScore=0; mockLeft=600;
+  mockIdx=0; mockScore=0;
   show("mockrun");
   renderMockQ();
-  clearInterval(mockTimer);
-  mockTimer = setInterval(()=>{
-    mockLeft--;
-    const m=Math.floor(mockLeft/60), s=mockLeft%60;
-    $("mockTimer").textContent = m+":"+String(s).padStart(2,"0");
-    if(mockLeft<=0){ finishMock(true); }
-  },1000);
-  $("mockTimer").textContent="10:00";
+  clearInterval(mockTimer); mockTimer=null;
+  const timerBox = document.querySelector("#view-mockrun .timer");
+  if(mockRelaxed){
+    timerBox.innerHTML = '<div style="font-size:22px">😌 <b>בנחת</b></div><div class="muted" style="font-size:14px">אין לחץ זמן — פותרים בקצב שלכם</div>';
+  } else {
+    timerBox.innerHTML = '<bdi id="mockTimer">10:00</bdi>';
+    mockLeft=600;
+    mockTimer = setInterval(()=>{
+      mockLeft--;
+      const m=Math.floor(mockLeft/60), s=mockLeft%60;
+      $("mockTimer").textContent = m+":"+String(s).padStart(2,"0");
+      if(mockLeft<=0){ finishMock(true); }
+    },1000);
+  }
 }
 function renderMockQ(){
   const cur = mockQs[mockIdx];
