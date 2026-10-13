@@ -151,7 +151,7 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
       </div>
       <div class="card" style="text-align:right;margin-top:10px">
         <b>🔒 הפרטיות שלכם קודם</b>
-        <p class="muted" style="margin:6px 0 0">כל הנתונים — התקדמות, ציונים ורצפים — נשמרים <b>רק על המכשיר הזה</b>. בלי הרשמה, בלי שרת ובלי חשבון. אפשר לתרגל גם בלי אינטרנט.</p>
+        <p class="muted" style="margin:6px 0 0">כל ההתקדמות, הציונים והרצפים נשמרים <b>רק על המכשיר הזה</b> — בלי הרשמה ובלי סיסמאות.<br>בעת ההרשמה נשלחים לשרת רק שם הילד/ה ומועד השימוש, כדי שנדע שהכיתה באמת משתמשת.</p>
       </div>
     </div>
   </section>
@@ -168,10 +168,6 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <h2>📅 לוח מבחנים כיתתי</h2>
     <div id="testsBoard"></div>
 
-    <h2>📚 תרגול</h2>
-    <div id="topicsList"></div>
-    <p class="muted" style="margin-top:10px">בקרוב: <span class="badge yellow">שפה</span> <span class="badge yellow">אנגלית</span> <span class="badge yellow">מדעים וטכנולוגיה</span></p>
-
     <div class="btnrow" style="margin-top:14px">
       <button class="btn yellow small" id="goMock" style="flex:1">🎯 מבחן מדמה</button>
       <button class="btn blue small" id="goGrades" style="flex:1">📊 מעקב ציונים</button>
@@ -180,9 +176,15 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <div id="secret-dot" aria-hidden="true"></div>
   </section>
 
+  <!-- מקצוע -->
+  <section id="view-subject" class="view">
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 id="subjectTitle" style="margin:0"></h1></div>
+    <div id="subjectBody"></div>
+  </section>
+
   <!-- נושא -->
   <section id="view-topic" class="view">
-    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 id="topicTitle" style="margin:0"></h1></div>
+    <div class="topbar"><button class="backbtn" data-back="subject">→ חזרה</button><h1 id="topicTitle" style="margin:0"></h1></div>
     <p class="muted" id="topicSub"></p>
     <div class="card"><b id="topicProgLabel"></b><div class="pbar"><i id="topicProgBar" style="width:0%"></i></div></div>
     <div id="topicBody"></div>
@@ -237,6 +239,12 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 style="margin:0">אזור הורים</h1></div>
     <p class="muted">דפי תשובות וטיפים להורים בלבד.</p>
     <div id="parentsBody"></div>
+    <div class="card">
+      <h3>📊 מעקב שימוש כיתתי</h3>
+      <p class="muted">מי נרשם ומתי נכנסו — לאור בלבד.</p>
+      <button class="btn blue small" id="auditLoad">טעינת נתונים</button>
+      <div id="auditOut" style="margin-top:8px"></div>
+    </div>
     <div class="card">
       <h3>איפוס נתונים</h3>
       <p class="muted">מוחק את שם הילד/ה, ההתקדמות, הרצף והציונים מהמכשיר הזה.</p>
@@ -311,6 +319,37 @@ function useChild(name){
   store.current = name;
   db = store.children[name];
   saveDB();
+  reportEvent("register", name);
+}
+
+// ---------- דיווח שימוש לשרת (מעקב adoption) ----------
+// נשלחים רק: מזהה מכשיר אקראי, שם הילד/ה וסוג האירוע. שום תוכן לימודי.
+function deviceId(){
+  let id = null;
+  try{ id = localStorage.getItem("learn67-device"); }catch(e){}
+  if(!id){
+    id = "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+    try{ localStorage.setItem("learn67-device", id); }catch(e){}
+  }
+  return id;
+}
+function reportEvent(type, child){
+  try{
+    fetch("/api/event", {
+      method: "POST",
+      headers: {"content-type":"application/json"},
+      body: JSON.stringify({ deviceId: deviceId(), child: child || store.current || "", type: type })
+    }).catch(()=>{});
+  }catch(e){}
+}
+function reportVisit(){
+  let last = null;
+  try{ last = localStorage.getItem("learn67-visit"); }catch(e){}
+  const today = todayStr();
+  if(last !== today){
+    try{ localStorage.setItem("learn67-visit", today); }catch(e){}
+    reportEvent("visit");
+  }
 }
 
 // ---------- עזרים ----------
@@ -355,7 +394,7 @@ function touchStreak(){
 }
 
 // ---------- ניווט בין מסכים ----------
-let currentTopic = null;
+let currentSubject = null, currentTopic = null;
 function show(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   $("view-"+id).classList.add("active");
@@ -366,6 +405,7 @@ document.addEventListener("click", e=>{
   if(!b) return;
   const to = b.getAttribute("data-back");
   if(to==="home") renderHome();
+  else if(to==="subject") renderSubject(currentSubject);
 });
 
 // ---------- מסך פתיחה: בחירת תלמיד/ה ----------
@@ -440,19 +480,29 @@ function renderHome(){
       '<div class="muted">מוכנות: '+bdi(ready+'%')+'</div>';
     if(grade!==undefined) html += '<div style="margin-top:4px">הציון: <b>'+bdi(grade)+'</b> 🎉</div>';
     div.innerHTML = html;
-    if(t.subject==="math"){
-      // לחיצה על מבחן מתמטיקה קופצת ישר לתרגול
-      div.classList.add("tap");
-      div.addEventListener("click", ()=>{
-        const el = $("topicsList");
-        if(el){ el.scrollIntoView({behavior:"smooth", block:"start"}); }
-      });
-    }
+    // לחיצה על כרטיס מבחן נכנסת ישר למסך המקצוע — בלי כפתורים נוספים
+    div.classList.add("tap");
+    div.addEventListener("click", ()=>renderSubject(t.subject));
     board.appendChild(div);
   });
 
-  // נושאי תרגול — ישירות מהמסך הראשי, בלי תפריט נפרד
-  const tlist = $("topicsList"); tlist.innerHTML = "";
+}
+$("goMock").addEventListener("click", renderMock);
+$("goGrades").addEventListener("click", renderGrades);
+
+// ---------- מקצוע ----------
+function renderSubject(sid){
+  currentSubject = sid;
+  const s = SUBJECTS.find(x=>x.id===sid);
+  $("subjectTitle").textContent = s.icon+" "+s.label;
+  const body = $("subjectBody"); body.innerHTML = "";
+  if(sid!=="math"){
+    body.innerHTML = '<div class="card center"><div class="big-emoji">🚧</div>'+
+      '<h3>התוכן ל'+esc(s.label)+' יתווסף בקרוב!</h3>'+
+      '<p class="muted">אבא/אמא מביאים שאלות לדוגמה, ואנחנו ממלאים את התוכן.</p></div>';
+    show("subject");
+    return;
+  }
   TOPICS.forEach(t=>{
     let ans=0;
     t.questions.forEach((_,qi)=>{ if(db.progress[t.id+"-"+qi]) ans++; });
@@ -464,11 +514,10 @@ function renderHome(){
       '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
       '<div class="muted">'+bdi(ans+"/"+t.questions.length)+" נענו</div>";
     d.addEventListener("click", ()=>renderTopic(t.id));
-    tlist.appendChild(d);
+    body.appendChild(d);
   });
+  show("subject");
 }
-$("goMock").addEventListener("click", renderMock);
-$("goGrades").addEventListener("click", renderGrades);
 
 // ---------- נושא: תרגול ----------
 const ST_LABEL = {answered:"עניתי ✓", correct:"צדקתי 🎉", review:"צריך חיזוק 💪"};
@@ -642,6 +691,7 @@ function finishMock(timeout){
   clearInterval(mockTimer);
   db.mockHistory.push({date:todayStr(), score:mockScore});
   saveDB();
+  reportEvent("mock");
   $("mockScore").textContent = mockScore+"/10";
   $("mockEmoji").textContent = mockScore>=9?"🏆":mockScore>=7?"🌟":mockScore>=5?"💪":"🍀";
   $("mockMsg").textContent = timeout ? "נגמר הזמן! " : "" +
@@ -674,6 +724,43 @@ $("resetData").addEventListener("click", ()=>{
     store = blankStore(); db = null; saveDB(); renderSetup();
   }
 });
+// ---------- מסך audit (לאור בלבד, מוגן מפתח) ----------
+$("auditLoad").addEventListener("click", async ()=>{
+  let key = "";
+  try{ key = sessionStorage.getItem("learn67-audit-key") || ""; }catch(e){}
+  if(!key){
+    key = prompt("מפתח ניהול:") || "";
+    if(!key) return;
+  }
+  const out = $("auditOut");
+  out.innerHTML = '<p class="muted">טוען…</p>';
+  try{
+    const r = await fetch("/api/audit?key="+encodeURIComponent(key));
+    if(r.status===403){
+      try{ sessionStorage.removeItem("learn67-audit-key"); }catch(e){}
+      out.innerHTML = '<p class="muted">מפתח שגוי.</p>';
+      return;
+    }
+    if(!r.ok) throw new Error("http "+r.status);
+    const j = await r.json();
+    try{ sessionStorage.setItem("learn67-audit-key", key); }catch(e){}
+    const devs = j.devices || [];
+    if(!devs.length){ out.innerHTML = '<p class="muted">אין עדיין נתונים.</p>'; return; }
+    let html = '<p><b>'+devs.length+'</b> מכשירים נרשמו</p>'+
+      '<table style="width:100%;font-size:13px;border-collapse:collapse">';
+    html += '<tr style="text-align:right;color:#888"><th>ילד/ה</th><th>נרשם</th><th>פעילות אחרונה</th><th>כניסות</th><th>מדמים</th></tr>';
+    devs.forEach(d=>{
+      const f = (d.firstSeen||"").slice(0,10), l = (d.lastSeen||"").slice(0,10);
+      html += '<tr style="border-top:1px solid #eee;text-align:right"><td><b>'+esc(d.child||"—")+'</b></td>'+
+        '<td>'+bdi(f)+'</td><td>'+bdi(l)+'</td>'+
+        '<td>'+bdi(d.visits||0)+'</td><td>'+bdi(d.mocks||0)+'</td></tr>';
+    });
+    html += '</table>';
+    out.innerHTML = html;
+  }catch(e){
+    out.innerHTML = '<p class="muted">שגיאה בטעינה. ודאו שיש חיבור.</p>';
+  }
+});
 // לחיצה ארוכה 600ms על הנקודה — בלי שום רמז חזותי
 (function(){
   const dot = $("secret-dot");
@@ -688,7 +775,7 @@ $("resetData").addEventListener("click", ()=>{
 })();
 
 // ---------- אתחול ----------
-if(store.current && db) renderHome(); else renderSetup();
+if(store.current && db){ renderHome(); reportVisit(); } else renderSetup();
 
 </script>
 </body>
