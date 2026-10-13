@@ -142,6 +142,7 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
       <h1>ברוכים הבאים ל-learn67!</h1>
       <p class="muted">אפליקציית התרגול של הכיתה — מבחנים, תרגול ומעקב, הכל במקום אחד.</p>
       <div class="card" style="text-align:right">
+        <div id="childList" style="margin-bottom:6px"></div>
         <div class="field">
           <label class="fl" for="childName">איך קוראים לילד/ה?</label>
           <input type="text" id="childName" maxlength="20" placeholder="למשל: אגם" autocomplete="off">
@@ -157,6 +158,7 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
       <h1 id="homeHello" style="margin:0">היי! 👋</h1>
       <span class="streak" id="streakPill">🔥 <bdi id="streakNum">0</bdi> ימים ברצף</span>
     </div>
+    <button class="btn ghost small" id="switchChild" style="margin:0 0 10px">🔄 החלפת תלמיד/ה</button>
 
     <h2>📅 לוח מבחנים כיתתי</h2>
     <div id="testsBoard"></div>
@@ -276,21 +278,40 @@ const SUBJECTS = [
 // נושאי מתמטיקה נטענים מ-TOPICS (מוטמע בהמשך הקובץ)
 // מבנה: {id, title, subtitle, help:[4 טיפים], questions:[[שאלה,תשובה]x10]}
 
-// ---------- אחסון מקומי ----------
+// ---------- אחסון מקומי: פרופיל לכל תלמיד/ה ----------
 const DB_KEY = "learn67-v1";
-function blankDB(){
-  return {childName:"", progress:{}, streak:{count:0,lastDay:""}, grades:{}, mockHistory:[]};
+function blankChild(){
+  return {progress:{}, streak:{count:0,lastDay:""}, grades:{}, mockHistory:[]};
 }
-function loadDB(){
+function blankStore(){ return {children:{}, current:""}; }
+function loadStore(){
   try{
     const raw = localStorage.getItem(DB_KEY);
-    if(!raw) return blankDB();
+    if(!raw) return blankStore();
     const d = JSON.parse(raw);
-    return Object.assign(blankDB(), d);
-  }catch(e){ return blankDB(); }
+    if(d.children) return d; // פורמט חדש: מפת תלמידים
+    // הגירה מפורמט ישן (פרופיל יחיד)
+    const store = blankStore();
+    if(d.childName){
+      store.children[d.childName] = {
+        progress: d.progress||{}, streak: d.streak||{count:0,lastDay:""},
+        grades: d.grades||{}, mockHistory: d.mockHistory||[]
+      };
+      store.current = d.childName;
+    }
+    return store;
+  }catch(e){ return blankStore(); }
 }
-function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){} }
-let db = loadDB();
+function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(store)); }catch(e){} }
+let store = loadStore();
+// db מצביע תמיד לרשומת התלמיד/ה הנוכחי/ת — כל הקוד הקיים ממשיך לעבוד
+let db = store.current ? (store.children[store.current] || blankChild()) : null;
+function useChild(name){
+  if(!store.children[name]) store.children[name] = blankChild();
+  store.current = name;
+  db = store.children[name];
+  saveDB();
+}
 
 // ---------- עזרים ----------
 function $(id){ return document.getElementById(id); }
@@ -348,18 +369,40 @@ document.addEventListener("click", e=>{
   else if(to==="subject") renderSubject(currentSubject);
 });
 
-// ---------- מסך פתיחה ----------
+// ---------- מסך פתיחה: בחירת תלמיד/ה ----------
 function renderSetup(){
   show("setup");
-  $("childName").value = db.childName || "";
+  const list = $("childList");
+  list.innerHTML = "";
+  const names = Object.keys(store.children);
+  if(names.length){
+    const h = document.createElement("p");
+    h.className = "muted"; h.style.margin = "0 0 4px";
+    h.textContent = "בחרו תלמיד/ה:";
+    list.appendChild(h);
+    names.forEach(n=>{
+      const b = document.createElement("button");
+      b.className = "btn ghost small";
+      b.style.cssText = "display:block;width:100%;margin:6px 0";
+      b.textContent = "🎒 " + n;
+      b.addEventListener("click", ()=>{ useChild(n); renderHome(); });
+      list.appendChild(b);
+    });
+    const h2 = document.createElement("p");
+    h2.className = "muted"; h2.style.margin = "10px 0 4px";
+    h2.textContent = "או הוסיפו תלמיד/ה חדש/ה:";
+    list.appendChild(h2);
+  }
+  $("childName").value = "";
 }
 $("setupGo").addEventListener("click", ()=>{
   const v = $("childName").value.trim();
   if(!v){ $("childName").focus(); return; }
-  db.childName = v; saveDB();
+  useChild(v);
   renderHome();
 });
 
+$("switchChild").addEventListener("click", renderSetup);
 // ---------- מסך בית ----------
 function mathProgress(){
   let ans=0, tot=0;
@@ -378,7 +421,7 @@ function testReadiness(test){
 }
 function renderHome(){
   show("home");
-  $("homeHello").textContent = "היי "+db.childName+"! 👋";
+  $("homeHello").textContent = "היי "+store.current+"! 👋";
   $("streakNum").textContent = db.streak.count || 0;
 
   // לוח מבחנים — ממוין לפי תאריך
@@ -652,8 +695,8 @@ function renderParents(){
   });
 }
 $("resetData").addEventListener("click", ()=>{
-  if(confirm("למחוק את כל הנתונים? (שם, התקדמות, רצף, ציונים)")){
-    db = blankDB(); saveDB(); renderSetup();
+  if(confirm("למחוק את כל הנתונים של כל התלמידים?")){
+    store = blankStore(); db = null; saveDB(); renderSetup();
   }
 });
 // לחיצה ארוכה 600ms על הנקודה — בלי שום רמז חזותי
@@ -670,7 +713,7 @@ $("resetData").addEventListener("click", ()=>{
 })();
 
 // ---------- אתחול ----------
-if(db.childName) renderHome(); else renderSetup();
+if(store.current && db) renderHome(); else renderSetup();
 
 </script>
 </body>
