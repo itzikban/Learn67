@@ -110,6 +110,11 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
 #view-parents ol{margin:6px 0;padding-right:22px}
 #view-parents li{margin:5px 0}
 .tips{background:#f6f8fb;border:1px solid #dfe5ec;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:14.5px}
+details.pcoll>summary{cursor:pointer;font-weight:700;font-size:1.05em;padding:4px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details.pcoll>summary::-webkit-details-marker{display:none}
+details.pcoll>summary::marker{content:""}
+details.pcoll .chev{color:#8a8f98;font-size:.85em;transition:transform .15s}
+details.pcoll[open] .chev{transform:rotate(180deg)}
 .tips b{color:#1f1f1f}
 
 /* הנקודה החבויה */
@@ -732,10 +737,12 @@ function renderParents(){
     const d = document.createElement("div");
     d.className = "card";
     const topics = TOPICS.filter(tp=>(tp.tests||[]).indexOf(t.id)>=0);
-    let html = "<h3>"+esc(t.label)+' <span class="muted" style="font-size:.8em">'+esc(fmtDate(t.date))+" · "+esc(t.kind)+"</span></h3>";
+    const head = esc(t.label)+' <span class="muted" style="font-size:.8em">'+esc(fmtDate(t.date))+" · "+esc(t.kind)+"</span>";
+    let html;
     if(!topics.length){
-      html += '<p class="muted">בקרוב — שאלות ותשובות יתווספו בהמשך.</p>';
+      html = "<h3>"+head+"</h3><p class='muted'>בקרוב — שאלות ותשובות יתווספו בהמשך.</p>";
     } else {
+      html = "<details class='pcoll'><summary><span>"+head+"</span><span class='chev'>▾</span></summary><div>";
       topics.forEach(tp=>{
         html += "<h4 style='margin:14px 0 4px'>"+esc(tp.title)+"</h4>";
         html += '<div class="tips"><b>💡 איך לעזור בלי לפתור</b><ul style="margin:4px 0;padding-right:18px">';
@@ -748,6 +755,7 @@ function renderParents(){
         });
         html += "</ol>";
       });
+      html += "</div></details>";
     }
     d.innerHTML = html;
     body.appendChild(d);
