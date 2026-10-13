@@ -346,6 +346,7 @@ function useChild(name){
   db = store.children[name];
   saveDB();
   reportEvent("register", name);
+  reportVisit();
 }
 
 // ---------- דיווח שימוש לשרת (מעקב adoption) ----------
@@ -368,15 +369,8 @@ function reportEvent(type, child){
     }).catch(()=>{});
   }catch(e){}
 }
-function reportVisit(){
-  let last = null;
-  try{ last = localStorage.getItem("learn67-visit"); }catch(e){}
-  const today = todayStr();
-  if(last !== today){
-    try{ localStorage.setItem("learn67-visit", today); }catch(e){}
-    reportEvent("visit");
-  }
-}
+// כל פתיחה של האפליקציה (עם תלמיד/ה נבחר/ת) = אירוע visit אחד
+function reportVisit(){ reportEvent("visit"); }
 
 // ---------- עזרים ----------
 function $(id){ return document.getElementById(id); }
