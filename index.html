@@ -113,8 +113,10 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
 .tips b{color:#1f1f1f}
 
 /* הנקודה החבויה */
-#secret-dot{width:12px;height:12px;border-radius:50%;background:#dcdcdc;
-  margin:34px auto 0;opacity:.55;touch-action:none;user-select:none;-webkit-user-select:none}
+#secret-dot{width:48px;height:48px;margin:26px auto 0;border-radius:50%;position:relative;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}
+#secret-dot::after{content:"";position:absolute;top:50%;left:50%;width:10px;height:10px;
+  transform:translate(-50%,-50%);border-radius:50%;background:#dcdcdc;opacity:.55}
 
 /* עמוד פתיחה */
 .hero{text-align:center;padding:34px 8px}
@@ -722,12 +724,15 @@ $("resetData").addEventListener("click", ()=>{
 (function(){
   const dot = $("secret-dot");
   let t = null;
-  function start(e){ e.preventDefault(); t=setTimeout(()=>{ renderParents(); },600); }
-  function cancel(){ clearTimeout(t); }
+  function start(e){ if(t) return; e.preventDefault(); t=setTimeout(()=>{ t=null; renderParents(); },600); }
+  function cancel(){ clearTimeout(t); t=null; }
   dot.addEventListener("pointerdown", start);
   dot.addEventListener("pointerup", cancel);
   dot.addEventListener("pointerleave", cancel);
   dot.addEventListener("pointercancel", cancel);
+  dot.addEventListener("touchstart", start, {passive:false});
+  dot.addEventListener("touchend", cancel);
+  dot.addEventListener("touchcancel", cancel);
   dot.addEventListener("contextmenu", e=>e.preventDefault());
 })();
 
