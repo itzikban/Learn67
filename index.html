@@ -168,8 +168,9 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <h2>📅 לוח מבחנים כיתתי</h2>
     <div id="testsBoard"></div>
 
-    <h2>📚 מקצועות</h2>
-    <div class="subjgrid" id="subjectsGrid"></div>
+    <h2>📚 תרגול</h2>
+    <div id="topicsList"></div>
+    <p class="muted" style="margin-top:10px">בקרוב: <span class="badge yellow">שפה</span> <span class="badge yellow">אנגלית</span> <span class="badge yellow">מדעים וטכנולוגיה</span></p>
 
     <div class="btnrow" style="margin-top:14px">
       <button class="btn yellow small" id="goMock" style="flex:1">🎯 מבחן מדמה</button>
@@ -179,15 +180,9 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <div id="secret-dot" aria-hidden="true"></div>
   </section>
 
-  <!-- מקצוע -->
-  <section id="view-subject" class="view">
-    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 id="subjectTitle" style="margin:0"></h1></div>
-    <div id="subjectBody"></div>
-  </section>
-
   <!-- נושא -->
   <section id="view-topic" class="view">
-    <div class="topbar"><button class="backbtn" data-back="subject">→ חזרה</button><h1 id="topicTitle" style="margin:0"></h1></div>
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 id="topicTitle" style="margin:0"></h1></div>
     <p class="muted" id="topicSub"></p>
     <div class="card"><b id="topicProgLabel"></b><div class="pbar"><i id="topicProgBar" style="width:0%"></i></div></div>
     <div id="topicBody"></div>
@@ -360,7 +355,7 @@ function touchStreak(){
 }
 
 // ---------- ניווט בין מסכים ----------
-let currentSubject = null, currentTopic = null;
+let currentTopic = null;
 function show(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   $("view-"+id).classList.add("active");
@@ -371,7 +366,6 @@ document.addEventListener("click", e=>{
   if(!b) return;
   const to = b.getAttribute("data-back");
   if(to==="home") renderHome();
-  else if(to==="subject") renderSubject(currentSubject);
 });
 
 // ---------- מסך פתיחה: בחירת תלמיד/ה ----------
@@ -446,44 +440,19 @@ function renderHome(){
       '<div class="muted">מוכנות: '+bdi(ready+'%')+'</div>';
     if(grade!==undefined) html += '<div style="margin-top:4px">הציון: <b>'+bdi(grade)+'</b> 🎉</div>';
     div.innerHTML = html;
+    if(t.subject==="math"){
+      // לחיצה על מבחן מתמטיקה קופצת ישר לתרגול
+      div.classList.add("tap");
+      div.addEventListener("click", ()=>{
+        const el = $("topicsList");
+        if(el){ el.scrollIntoView({behavior:"smooth", block:"start"}); }
+      });
+    }
     board.appendChild(div);
   });
 
-  // כרטיסי מקצועות
-  const grid = $("subjectsGrid"); grid.innerHTML = "";
-  SUBJECTS.forEach(s=>{
-    const d = document.createElement("div");
-    d.className = "subj";
-    let inner = '<div class="ico">'+s.icon+'</div><div class="nm">'+esc(s.label)+'</div>';
-    if(s.id==="math"){
-      const p = mathProgress();
-      const pct = p.tot ? Math.round(p.ans/p.tot*100) : 0;
-      inner += '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
-               '<div class="muted">'+bdi(p.ans+"/"+p.tot)+' שאלות</div>';
-    } else {
-      inner += '<span class="badge yellow">בקרוב</span>';
-    }
-    d.innerHTML = inner;
-    d.addEventListener("click", ()=>renderSubject(s.id));
-    grid.appendChild(d);
-  });
-}
-$("goMock").addEventListener("click", renderMock);
-$("goGrades").addEventListener("click", renderGrades);
-
-// ---------- מקצוע ----------
-function renderSubject(sid){
-  currentSubject = sid;
-  const s = SUBJECTS.find(x=>x.id===sid);
-  $("subjectTitle").textContent = s.icon+" "+s.label;
-  const body = $("subjectBody"); body.innerHTML = "";
-  if(sid!=="math"){
-    body.innerHTML = '<div class="card center"><div class="big-emoji">🚧</div>'+
-      '<h3>התוכן ל'+esc(s.label)+' יתווסף בקרוב!</h3>'+
-      '<p class="muted">אבא/אמא מביאים שאלות לדוגמה, ואנחנו ממלאים את התוכן.</p></div>';
-    show("subject");
-    return;
-  }
+  // נושאי תרגול — ישירות מהמסך הראשי, בלי תפריט נפרד
+  const tlist = $("topicsList"); tlist.innerHTML = "";
   TOPICS.forEach(t=>{
     let ans=0;
     t.questions.forEach((_,qi)=>{ if(db.progress[t.id+"-"+qi]) ans++; });
@@ -495,10 +464,11 @@ function renderSubject(sid){
       '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
       '<div class="muted">'+bdi(ans+"/"+t.questions.length)+" נענו</div>";
     d.addEventListener("click", ()=>renderTopic(t.id));
-    body.appendChild(d);
+    tlist.appendChild(d);
   });
-  show("subject");
 }
+$("goMock").addEventListener("click", renderMock);
+$("goGrades").addEventListener("click", renderGrades);
 
 // ---------- נושא: תרגול ----------
 const ST_LABEL = {answered:"עניתי ✓", correct:"צדקתי 🎉", review:"צריך חיזוק 💪"};
