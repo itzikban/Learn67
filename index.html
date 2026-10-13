@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#58cc02">
+<title>learn67 — תרגול למבחנים כיתה ג'</title>
+<!-- גופן Heebo אופציונלי: האפליקציה עובדת גם אופליין עם גופני מערכת -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#58cc02; --green-dark:#46a302; --green-soft:#e7f9d4;
+  --blue:#1cb0f6;  --blue-dark:#1899d6;  --blue-soft:#ddf4ff;
+  --red:#ff5c5c;   --red-dark:#d33131;   --red-soft:#ffe3e3;
+  --yellow:#ffc800;--yellow-dark:#d9a400;--yellow-soft:#fff3c4;
+  --purple:#a560e8;--purple-soft:#f1e4ff;
+  --ink:#3c3c3c; --muted:#7a7a7a; --line:#e7e7e7;
+  --bg:#f4f6f8; --card:#ffffff;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Heebo",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Hebrew","Helvetica Neue",Arial,sans-serif;
+  line-height:1.65}
+#app{max-width:660px;margin:0 auto;min-height:100vh;padding:18px 16px 70px}
+.view{display:none}
+.view.active{display:block;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* כפתורים שמנמנים בסגנון דואולינגו */
+.btn{display:block;width:100%;border:none;cursor:pointer;font-family:inherit;
+  font-weight:800;font-size:17px;color:#fff;background:var(--green);
+  border-radius:16px;padding:14px 16px;margin:10px 0;
+  box-shadow:0 4px 0 var(--green-dark);transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--green-dark)}
+.btn.blue{background:var(--blue);box-shadow:0 4px 0 var(--blue-dark)}
+.btn.blue:active{box-shadow:0 1px 0 var(--blue-dark)}
+.btn.red{background:var(--red);box-shadow:0 4px 0 var(--red-dark)}
+.btn.red:active{box-shadow:0 1px 0 var(--red-dark)}
+.btn.yellow{background:var(--yellow);box-shadow:0 4px 0 var(--yellow-dark);color:#5b4a00}
+.btn.yellow:active{box-shadow:0 1px 0 var(--yellow-dark)}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+.btn.ghost:active{box-shadow:0 1px 0 var(--line)}
+.btn.small{font-size:14px;padding:9px 12px;border-radius:12px;width:auto;display:inline-block;margin:4px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 16px;margin:12px 0}
+.card.tap{cursor:pointer}
+.card.tap:active{transform:scale(.99)}
+h1{font-size:26px;margin:6px 0 10px;font-weight:800}
+h2{font-size:20px;margin:18px 0 8px;font-weight:800}
+h3{font-size:17px;margin:12px 0 6px;font-weight:700}
+.muted{color:var(--muted);font-size:14px}
+
+/* מד התקדמות */
+.pbar{height:14px;background:#ececec;border-radius:9px;overflow:hidden;margin:8px 0}
+.pbar>i{display:block;height:100%;background:var(--green);border-radius:9px;transition:width .35s}
+.pbar.blue>i{background:var(--blue)}
+.pbar.yellow>i{background:var(--yellow)}
+
+/* תגיות */
+.badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;
+  padding:3px 12px;margin:2px;background:var(--blue-soft);color:#0b6fa4}
+.badge.green{background:var(--green-soft);color:#3f7a00}
+.badge.yellow{background:var(--yellow-soft);color:#8a6d00}
+.badge.red{background:var(--red-soft);color:#b02020}
+.badge.purple{background:var(--purple-soft);color:#6d3bb5}
+
+/* שאלות */
+.qcard{background:var(--card);border:2px solid var(--line);border-radius:18px;
+  padding:14px 16px;margin:12px 0}
+.qhead{display:flex;gap:10px;align-items:flex-start}
+.qnum{flex:0 0 34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;
+  font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px}
+.qnum.done{background:var(--green)}
+.qnum.review{background:var(--yellow);color:#5b4a00}
+.qtext{font-size:16.5px;padding-top:4px}
+.qstatus{margin-top:10px}
+
+/* כרטיסי מקצוע */
+.subjgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.subj{background:var(--card);border:2px solid var(--line);border-radius:18px;
+  padding:16px 12px;text-align:center;cursor:pointer}
+.subj:active{transform:scale(.98)}
+.subj .ico{font-size:34px}
+.subj .nm{font-weight:800;font-size:16px;margin:4px 0}
+
+/* לוח מבחנים */
+.test{border-right:6px solid var(--blue)}
+.test .dline{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.count{font-weight:800;color:#0b6fa4}
+
+/* טיימר */
+.timer{font-size:44px;font-weight:800;text-align:center;color:var(--ink);
+  font-variant-numeric:tabular-nums;direction:ltr}
+
+/* שדות */
+input[type=text],input[type=number]{font-family:inherit;font-size:17px;border:2px solid var(--line);
+  border-radius:14px;padding:12px 14px;width:100%;background:#fff;color:var(--ink)}
+input:focus{outline:none;border-color:var(--blue)}
+.field{margin:10px 0}
+label.fl{display:block;font-weight:700;margin-bottom:4px}
+
+/* אזור הורים — נקי ורציני */
+#view-parents{--p-ink:#2b2b2b}
+#view-parents .card{border-color:#d8d8d8}
+#view-parents h2{color:#1f1f1f}
+#view-parents ol{margin:6px 0;padding-right:22px}
+#view-parents li{margin:5px 0}
+.tips{background:#f6f8fb;border:1px solid #dfe5ec;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:14.5px}
+.tips b{color:#1f1f1f}
+
+/* הנקודה החבויה */
+#secret-dot{width:12px;height:12px;border-radius:50%;background:#dcdcdc;
+  margin:34px auto 0;opacity:.55;touch-action:none;user-select:none;-webkit-user-select:none}
+
+/* עמוד פתיחה */
+.hero{text-align:center;padding:34px 8px}
+.hero .logo{font-size:64px}
+.streak{display:inline-flex;align-items:center;gap:6px;background:#fff;
+  border:2px solid var(--line);border-radius:999px;padding:6px 16px;font-weight:800}
+.gradebar{display:flex;align-items:center;gap:10px;margin:8px 0}
+.gradebar .pbar{flex:1;margin:0}
+.gnum{font-weight:800;min-width:44px;text-align:left}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.backbtn{border:2px solid var(--line);background:#fff;border-radius:12px;
+  font-family:inherit;font-weight:800;font-size:15px;padding:8px 14px;cursor:pointer;color:var(--ink)}
+.center{text-align:center}
+.big-emoji{font-size:56px}
+.score{font-size:60px;font-weight:800;color:var(--green-dark)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- מסך פתיחה: שם הילד/ה -->
+  <section id="view-setup" class="view">
+    <div class="hero">
+      <div class="logo">🎒</div>
+      <h1>ברוכים הבאים ל-learn67!</h1>
+      <p class="muted">אפליקציית התרגול של הכיתה — מבחנים, תרגול ומעקב, הכל במקום אחד.</p>
+      <div class="card" style="text-align:right">
+        <div class="field">
+          <label class="fl" for="childName">איך קוראים לילד/ה?</label>
+          <input type="text" id="childName" maxlength="20" placeholder="למשל: אגם" autocomplete="off">
+        </div>
+        <button class="btn" id="setupGo">מתחילים! 🚀</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- מסך בית -->
+  <section id="view-home" class="view">
+    <div class="topbar" style="justify-content:space-between">
+      <h1 id="homeHello" style="margin:0">היי! 👋</h1>
+      <span class="streak" id="streakPill">🔥 <bdi id="streakNum">0</bdi> ימים ברצף</span>
+    </div>
+
+    <h2>📅 לוח מבחנים כיתתי</h2>
+    <div id="testsBoard"></div>
+
+    <h2>📚 מקצועות</h2>
+    <div class="subjgrid" id="subjectsGrid"></div>
+
+    <div class="btnrow" style="margin-top:14px">
+      <button class="btn yellow small" id="goMock" style="flex:1">🎯 מבחן מדמה</button>
+      <button class="btn blue small" id="goGrades" style="flex:1">📊 מעקב ציונים</button>
+    </div>
+
+    <div id="secret-dot" aria-hidden="true"></div>
+  </section>
+
+  <!-- מקצוע -->
+  <section id="view-subject" class="view">
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 id="subjectTitle" style="margin:0"></h1></div>
+    <div id="subjectBody"></div>
+  </section>
+
+  <!-- נושא -->
+  <section id="view-topic" class="view">
+    <div class="topbar"><button class="backbtn" data-back="subject">→ חזרה</button><h1 id="topicTitle" style="margin:0"></h1></div>
+    <p class="muted" id="topicSub"></p>
+    <div class="card"><b id="topicProgLabel"></b><div class="pbar"><i id="topicProgBar" style="width:0%"></i></div></div>
+    <div id="topicBody"></div>
+  </section>
+
+  <!-- ציונים -->
+  <section id="view-grades" class="view">
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 style="margin:0">📊 מעקב ציונים</h1></div>
+    <div class="card" id="gradeSummary"></div>
+    <div id="gradesBody"></div>
+  </section>
+
+  <!-- מבחן מדמה: בחירת מקצוע -->
+  <section id="view-mock" class="view">
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 style="margin:0">🎯 מבחן מדמה</h1></div>
+    <p class="muted">10 שאלות אקראיות עם טיימר של 10 דקות — כמו הדבר האמיתי!</p>
+    <div id="mockSubjects"></div>
+  </section>
+
+  <!-- מבחן מדמה: הרצה -->
+  <section id="view-mockrun" class="view">
+    <div class="timer"><bdi id="mockTimer">10:00</bdi></div>
+    <div class="card center"><b id="mockProg">שאלה 1 מתוך 10</b><div class="pbar blue"><i id="mockBar" style="width:10%"></i></div></div>
+    <div class="qcard">
+      <div class="qhead"><div class="qnum" id="mockQNum">1</div><div class="qtext" id="mockQText"></div></div>
+      <div class="muted" id="mockQTopic" style="margin-top:6px"></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn small" id="mockRight" style="flex:1">צדקתי 🎉</button>
+        <button class="btn red small" id="mockWrong" style="flex:1">טעיתי 💪</button>
+      </div>
+      <p class="muted center">פתרו על דף, וסמנו בסוף כל שאלה</p>
+    </div>
+  </section>
+
+  <!-- סיכום מבחן מדמה -->
+  <section id="view-mockdone" class="view">
+    <div class="hero">
+      <div class="big-emoji" id="mockEmoji">🏆</div>
+      <div class="score"><bdi id="mockScore">0/10</bdi></div>
+      <p id="mockMsg" style="font-weight:700"></p>
+      <button class="btn blue" id="mockAgain">מבחן נוסף 🔁</button>
+      <button class="btn ghost" data-back="home">חזרה לבית</button>
+    </div>
+  </section>
+
+  <!-- אזור הורים (חבוי) -->
+  <section id="view-parents" class="view">
+    <div class="topbar"><button class="backbtn" data-back="home">→ חזרה</button><h1 style="margin:0">אזור הורים</h1></div>
+    <p class="muted">דפי תשובות וטיפים להורים בלבד.</p>
+    <div id="parentsBody"></div>
+    <div class="card">
+      <h3>איפוס נתונים</h3>
+      <p class="muted">מוחק את שם הילד/ה, ההתקדמות, הרצף והציונים מהמכשיר הזה.</p>
+      <button class="btn red small" id="resetData">איפוס כל הנתונים</button>
+    </div>
+  </section>
+
+</div>
+<script>
+"use strict";
+/* ===== נתוני נושאי מתמטיקה (מוטמעים כלשונם) ===== */
+const TOPICS = [{"id":1,"title":"מבנה עשרוני, חיבור וחיסור","subtitle":"מספרים עד 1,000: בנייה, השוואה וסדרות","cardLabel":"מתמטיקה","toneClass":"t1","help":["בהשוואות (709 __ 790): משווים משמאל לימין — קודם מאות, אחר כך עשרות, אחר כך יחידות. ברגע שמוצאים ספרה שונה — נגמר.","בהשלמת ספרה חסרה (6_4 > 674): שאלו איזו ספרה תהפוך את זה לנכון — ואם יש כמה אפשרויות, תנו לה למצוא את כולן.","בהשוואת תרגילים בלי לחשב: מחפשים מה משותף ומה שונה. אם אחד המחוברים זהה — מסתכלים רק על השני.","בתרגיל עזר (500 + 200, ואז 500 + 246): פותרים את הקל קודם, ואז מוסיפים רק את ההפרש."],"questions":[["בנו בעזרת הספרות 3, 0, 8 את המספר התלת־ספרתי הגדול ביותר. כתבו גם את המספר העוקב לו.","830. המספר העוקב: 831."],["בנו בעזרת הספרות 5, 0, 2 את המספר התלת־ספרתי הקטן ביותר. כתבו גם את המספר הקודם לו.","205. המספר הקודם: 204."],["סמנו > או <: 709 __ 790 ; 851 __ 815","< ; >"],["השלימו את הספרה החסרה. שימו לב: לפעמים יש יותר מתשובה אחת נכונה! 6_4 > 674 ; 7_5 < 775","למשל 684 (8 או 9 מתאימים) ; למשל 705 (כל ספרה מ־0 עד 6 מתאימה)."],["בכל מסגרת כתבו שתי אפשרויות שונות למספר מתאים: 500 > ___ ; 900 < ___","למשל: 499, 350 ; למשל: 901, 950."],["סדרו מהקטן לגדול: 675, 475, 706, 670.","475, 670, 675, 706."],["בלי לחשב, סמנו >, < או =: 246 + 132 __ 246 + 123 ; 864 − 321 __ 864 − 312","> ; <"],["פתרו את התרגיל הראשון, והיעזרו בו כדי לפתור את השני: 500 + 200 = ___ ; 500 + 246 = ___","700 ; 746."],["כתבו את התרגיל במאונך ופתרו (יחידות מתחת ליחידות, עשרות מתחת לעשרות): 700 − 256","444."],["השלימו את שני התרגילים: 460 + ___ = 500 ; 500 − ___ = 460","40 ; 40."]]},{"id":2,"title":"משמעות הכפל והחילוק","subtitle":"קבוצות שוות, חיבור חוזר וחילוק עד 100","cardLabel":"מתמטיקה","toneClass":"t2","help":["בציור קבוצות שוות: סופרים כמה קבוצות וכמה בכל קבוצה — הסדר חשוב (3 קבוצות של 5 זה 3 × 5).","בהשוואת כפל לחיבור חוזר (8 × 3 מול 8 + 8 + 8): תנו לה לגלות לבד שהם אותו דבר — זה הרגע שבו הכפל נתפס.","במספר חסר או בחילוק: תמיד חוזרים לתרגיל הכפל ההפוך — איזה מספר כפול 7 נותן 63?","במנה קטנה או גדולה מ־5: לא חייבים לחשב עד הסוף — אפשר להעריך, למשל 12 לחלק ל־4 זה בערך 3."],"questions":[["ציירו 3 קבוצות ובכל קבוצה 5 כוכבים. כתבו תרגיל כפל מתאים וגם תרגיל חיבור חוזר.","3 × 5 = 15 ; 5 + 5 + 5 = 15."],["איזה תרגיל כפל מתאר 4 שורות של 6 מדבקות? כתבו גם את תרגיל החיבור החוזר.","4 × 6 = 24 ; 6 + 6 + 6 + 6 = 24."],["בלי לחשב, סמנו >, < או =: 8 × 3 __ 8 + 8 + 8 ; 5 × 6 __ 6 × 5","= ; ="],["בלי לחשב, סמנו >, < או =: 4 × 6 __ 4 × 7 ; 9 × 8 __ 0 × 8","< ; >"],["השלימו: 8 × ___ = 40 ; ___ × 5 = 35","5 ; 7."],["איזה תרגיל כפל עוזר לפתור את 63 ÷ 7? כתבו אותו ואת התשובה.","7 × 9 = 63, ולכן 63 ÷ 7 = 9."],["חלקו 24 עפרונות שווה בשווה בין 4 ילדים. ציירו את החלוקה וכתבו תרגיל חילוק.","24 ÷ 4 = 6. כל ילד קיבל 6 עפרונות."],["פתרו: 16 ÷ 4 = ___ ; 20 ÷ 5 = ___ ; 18 ÷ 2 = ___. סדרו את המנות מהקטנה לגדולה.","4 ; 4 ; 9. מהקטנה לגדולה: 4, 4, 9."],["כתבו תרגיל חילוק שהמנה שלו קטנה מ־5, ותרגיל חילוק שהמנה שלו גדולה מ־5.","למשל: 12 ÷ 4 = 3 ; למשל: 30 ÷ 5 = 6."],["מה הקשר בין התרגילים 6 × 4 = 24 ו־24 ÷ 6 = 4?","הכפל והחילוק הם פעולות הפוכות; שני התרגילים מתארים את אותן קבוצות שוות."]]},{"id":3,"title":"ישר המספרים","subtitle":"מספר קודם ועוקב, קפיצות וסדרות","cardLabel":"מתמטיקה","toneClass":"t3","help":["במספר קודם או עוקב ליד מאות עגולות (199 ← 200): זה המקום שבו טועים הכי הרבה — תנו לה לומר בקול את הרצף.","בסדרות: קודם מוצאים את גודל הקפיצה (מפחיתים שני מספרים סמוכים), ורק אז ממשיכים.","בסדרה פתוחה (צרו סדרה משלכם): כל קפיצה שווה מתאימה — תנו לה לבחור מספרים שהיא אוהבת.","באמצע בין שני מספרים: מחשבים את המרחק, חוצים אותו לשניים, ומתקדמים מהמספר הקטן."],"questions":[["כתבו את המספר העוקב לכל מספר: 90, ___ ; 199, ___ ; 609, ___","91 ; 200 ; 610."],["כתבו את המספר הקודם לכל מספר: ___, 80 ; ___, 500 ; ___, 301","79 ; 499 ; 300."],["בכל מסגרת כתבו את המספר הקודם ואת המספר העוקב: ___, 899, ___","898, 900."],["השלימו את הסדרה (כל מספר גדול מקודמו ב־10): 615, 625, ___, 645, ___","635 ; 655."],["השלימו את הסדרה (כל מספר קטן מקודמו ב־20): 480, 460, ___, ___, 400","440 ; 420."],["צרו סדרה משלכם בת 4 מספרים כך שיהיו בה קפיצות שוות. כתבו מה גודל הקפיצה.","תשובה פתוחה — למשל: 100, 150, 200, 250 (קפיצה של 50)."],["איזה מספר נמצא בדיוק באמצע בין 200 ל־300?","250."],["מתחילים ב־125 ומתקדמים 3 קפיצות של 10. לאיזה מספר מגיעים?","155."],["מה המרחק בין 275 ל־325 על ישר המספרים?","50."],["סדרו מהקטן לגדול: 340, 304, 430, 403.","304, 340, 403, 430."]]},{"id":4,"title":"שאלות מילוליות","subtitle":"פתרון, תשובה מילולית ובעיות דו־שלביות","cardLabel":"מתמטיקה","toneClass":"t4","help":["בכל בעיה מילולית: קודם כותבים פתרון (תרגיל), ואז תשובה מילולית (משפט עם יחידות). הסדר הזה הוא חצי מהציון.","בבעיית השוואה (בכמה יותר): מחשבים כל צד בנפרד, ורק בסוף מפחיתים.","בבעיית דו־שלבית: פותרים שלב אחד, כותבים את תוצאת הביניים, ורק אז ממשיכים.","בשאלת הציעו שתי אפשרויות: אין תשובה אחת נכונה — תנו לה להציע ולנמק למה זה עובד."],"questions":[["בספרייה היו 325 ספרים. תרמו לה עוד 148 ספרים. כמה ספרים יש עכשיו? כתבו פתרון ותשובה מילולית.","פתרון: 325 + 148 = 473. תשובה מילולית: עכשיו יש בספרייה 473 ספרים."],["במיכל היו 600 ליטר מים. השתמשו ב־175 ליטר. א. כמה ליטרים נשארו? ב. בכמה ליטרים השתמשו יותר ממה שנשאר? כתבו פתרון ותשובה מילולית.","א. פתרון: 600 − 175 = 425. תשובה מילולית: נשארו 425 ליטרים. ב. פתרון: 425 − 175 = 250. תשובה מילולית: השתמשו ב־250 ליטר יותר ממה שנשאר."],["בכל קופסה 8 טושים. כמה טושים יש ב־7 קופסאות? כתבו תרגיל כפל ותשובה מילולית.","פתרון: 8 × 7 = 56. תשובה מילולית: ב־7 קופסאות יש 56 טושים."],["המורה חילקה 45 מדבקות שווה בשווה בין 5 תלמידים. כמה מדבקות קיבל כל תלמיד? כתבו תרגיל חילוק ותשובה מילולית.","פתרון: 45 ÷ 5 = 9. תשובה מילולית: כל תלמיד קיבל 9 מדבקות."],["נועם אסף 84 קלפים ונתן 29 מהם לחבר. אחר כך קיבל 12 קלפים חדשים. כמה קלפים יש לו עכשיו? (בעיית דו־שלבית — כתבו את שני השלבים)","פתרון: 84 − 29 = 55; 55 + 12 = 67. תשובה מילולית: עכשיו יש לנועם 67 קלפים."],["באולם 10 שורות, ובכל שורה 9 כיסאות. 17 כיסאות נשארו ריקים. כמה ילדים ישבו באולם?","פתרון: 10 × 9 = 90; 90 − 17 = 73. תשובה מילולית: באולם ישבו 73 ילדים."],["בטיול השתתפו 4 קבוצות של 6 ילדים ועוד 3 מדריכים. כמה אנשים יצאו לטיול?","פתרון: 4 × 6 = 24; 24 + 3 = 27. תשובה מילולית: לטיול יצאו 27 אנשים."],["לדן היה אוסף של 20 גולות. במשחק הראשון הוא הרוויח 12 גולות. במשחק השני הוא הרוויח יותר מ־10 גולות, ובסוף יש לו פחות מ־50 גולות. הציעו שתי אפשרויות שונות למספר הגולות שהרוויח במשחק השני.","למשל: 11 (סך הכול 43) או 15 (סך הכול 47). כל מספר בין 11 ל־17 מתאים."],["אגם קראה 36 עמודים ביום ראשון ו־28 עמודים ביום שני. כמה עמודים קראה בשני הימים? כתבו פתרון ותשובה מילולית.","פתרון: 36 + 28 = 64. תשובה מילולית: אגם קראה 64 עמודים בשני הימים."],["רכבת נסעה 215 ק״מ בבוקר ו־187 ק״מ בערב. כמה קילומטרים נסעה בסך הכול? כתבו פתרון ותשובה מילולית.","פתרון: 215 + 187 = 402. תשובה מילולית: הרכבת נסעה 402 ק״מ בסך הכול."]]},{"id":5,"title":"אורך ושטח","subtitle":"יחידות מידה ושטח מלבן בצלעות שלמות","cardLabel":"גיאומטריה","toneClass":"t5","help":["בבחירת יחידה: שואלים האם זה הגיוני — כיתה באורך 500 סנטימטר נשמעת לא הגיוני, וזה הרמז.","בשטח: תמיד לחזור לציור — מלבן מחולק לריבועים. שטח זה כמה ריבועים נכנסים, לא קו.","שטח מלבן שווה אורך כפול רוחב. אם נתון השטח וצלע אחת — שואלים איזה מספר כפול 8 נותן 40?","בהשוואת שני מלבנים: מחשבים את שני השטחים וכותבים זה לצד זה — לא מנחשים לפי המראה."],"questions":[["באיזו יחידה מתאים למדוד את אורך העיפרון: סנטימטרים או מטרים?","סנטימטרים."],["באיזו יחידה מתאים למדוד את אורך הכיתה: סנטימטרים או מטרים?","מטרים."],["השלימו: מטר אחד = ___ סנטימטרים.","100 סנטימטרים."],["סרט אחד באורך 65 ס״מ וסרט שני באורך 28 ס״מ. מה אורכם יחד? כתבו פתרון ותשובה מילולית.","פתרון: 65 + 28 = 93. תשובה מילולית: אורכם יחד 93 ס״מ."],["מה מודדים בעזרת יחידות ריבועיות: אורך או שטח?","שטח."],["מלבן באורך 6 ס״מ וברוחב 4 ס״מ. ציירו אותו מחולק לריבועים של ס״מ אחד וכתבו מה שטחו.","6 × 4 = 24 סמ״ר."],["מלבן באורך 9 מטרים וברוחב 3 מטרים. מה שטחו? כתבו תרגיל כפל ותשובה מילולית.","פתרון: 9 × 3 = 27. תשובה מילולית: שטח המלבן 27 מ״ר."],["שטח מלבן הוא 40 סמ״ר. אורכו 8 ס״מ. מה רוחבו?","40 ÷ 8 = 5 ס״מ."],["שני מלבנים: א׳ — 5 על 4 ס״מ; ב׳ — 7 על 3 ס״מ. לאיזה מלבן שטח גדול יותר?","למלבן ב׳: 21 סמ״ר לעומת 20 סמ״ר."],["רצפה מלבנית באורך 10 מטרים וברוחב 5 מטרים. כמה אריחים של מטר רבוע אחד דרושים לכיסוי כולה?","50 אריחים."]]}];
+/* ============================================================
+   learn67 — אפליקציית תרגול כיתתית, כיתה ג'
+   כל הנתונים נשמרים מקומית בדפדפן (localStorage) — פרטי, בלי התחברות
+   ============================================================ */
+
+// ---------- מבחנים כיתתיים (מלוח המבחנים) ----------
+const TESTS = [
+  {id:"t1", subject:"math",    label:"מתמטיקה",           date:"2026-10-19", kind:"הערכה", desc:"מבנה עשרוני, חיבור וחיסור עד 1000, משמעות הכפל והחילוק עד 100, ישר המספרים, שאלות מילוליות, גיאומטריה (מדידת אורך, שטח, שטח מלבן)"},
+  {id:"t2", subject:"lang",    label:"שפה",               date:"2026-10-29", kind:"מבחן",   desc:"הבנת הנקרא ומיומנויות לשוניות (טקסט מידעי)"},
+  {id:"t3", subject:"math",    label:"מתמטיקה",           date:"2026-11-02", kind:"הערכה", desc:""},
+  {id:"t4", subject:"science", label:"מדעים וטכנולוגיה",   date:"2026-11-17", kind:"מבחן",   desc:""},
+  {id:"t5", subject:"math",    label:"גיאומטריה",          date:"2026-11-25", kind:"מבחן",   desc:""},
+  {id:"t6", subject:"eng",     label:"אנגלית",             date:"2026-12-13", kind:"מבחן",   desc:"טווח: 18-13.12"},
+  {id:"t7", subject:"math",    label:"מתמטיקה",           date:"2026-12-22", kind:"הערכה", desc:""},
+  {id:"t8", subject:"lang",    label:"שפה",               date:"2027-01-07", kind:"מיפוי",  desc:""},
+  {id:"t9", subject:"mixed",   label:"מתמטיקה ואנגלית",    date:"2027-01-11", kind:"מיפוי",  desc:""},
+];
+
+// ---------- מקצועות ----------
+const SUBJECTS = [
+  {id:"math",    label:"מתמטיקה",         icon:"🔢"},
+  {id:"lang",    label:"שפה",              icon:"📖"},
+  {id:"eng",     label:"אנגלית",           icon:"🔤"},
+  {id:"science", label:"מדעים וטכנולוגיה", icon:"🔬"},
+];
+
+// נושאי מתמטיקה נטענים מ-TOPICS (מוטמע בהמשך הקובץ)
+// מבנה: {id, title, subtitle, help:[4 טיפים], questions:[[שאלה,תשובה]x10]}
+
+// ---------- אחסון מקומי ----------
+const DB_KEY = "learn67-v1";
+function blankDB(){
+  return {childName:"", progress:{}, streak:{count:0,lastDay:""}, grades:{}, mockHistory:[]};
+}
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw) return blankDB();
+    const d = JSON.parse(raw);
+    return Object.assign(blankDB(), d);
+  }catch(e){ return blankDB(); }
+}
+function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){} }
+let db = loadDB();
+
+// ---------- עזרים ----------
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+// עטיפת bdi למספרים ותאריכים בתוך טקסט עברי
+function bdi(s){ return "<bdi>"+esc(s)+"</bdi>"; }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function daysUntil(dateStr){
+  const [y,m,dd] = dateStr.split("-").map(Number);
+  const target = new Date(y, m-1, dd);
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.round((target - now) / 86400000);
+}
+function fmtDate(dateStr){
+  const [y,m,d] = dateStr.split("-");
+  return d+"."+m+"."+y;
+}
+function countdownText(dateStr){
+  const n = daysUntil(dateStr);
+  if(n < 0)  return "המבחן עבר";
+  if(n === 0) return "המבחן היום! 😱";
+  if(n === 1) return "נשאר יום אחד!";
+  if(n === 2) return "נשארו יומיים!";
+  return "נשארו "+n+" ימים";
+}
+// עדכון רצף: נספר כשסומנה לפחות שאלה אחת ביום
+function touchStreak(){
+  const t = todayStr(), s = db.streak;
+  if(s.lastDay === t) return;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const ys = y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+  s.count = (s.lastDay === ys) ? s.count+1 : 1;
+  s.lastDay = t;
+  saveDB();
+}
+
+// ---------- ניווט בין מסכים ----------
+let currentSubject = null, currentTopic = null;
+function show(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  $("view-"+id).classList.add("active");
+  window.scrollTo(0,0);
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-back]");
+  if(!b) return;
+  const to = b.getAttribute("data-back");
+  if(to==="home") renderHome();
+  else if(to==="subject") renderSubject(currentSubject);
+});
+
+// ---------- מסך פתיחה ----------
+function renderSetup(){
+  show("setup");
+  $("childName").value = db.childName || "";
+}
+$("setupGo").addEventListener("click", ()=>{
+  const v = $("childName").value.trim();
+  if(!v){ $("childName").focus(); return; }
+  db.childName = v; saveDB();
+  renderHome();
+});
+
+// ---------- מסך בית ----------
+function mathProgress(){
+  let ans=0, tot=0;
+  TOPICS.forEach(t=>{
+    t.questions.forEach((_,qi)=>{
+      tot++;
+      if(db.progress[t.id+"-"+qi]) ans++;
+    });
+  });
+  return {ans, tot};
+}
+function testReadiness(test){
+  if(test.subject!=="math") return null; // אין עדיין תוכן
+  const p = mathProgress();
+  return p.tot ? Math.round(p.ans/p.tot*100) : 0;
+}
+function renderHome(){
+  show("home");
+  $("homeHello").textContent = "היי "+db.childName+"! 👋";
+  $("streakNum").textContent = db.streak.count || 0;
+
+  // לוח מבחנים — ממוין לפי תאריך
+  const board = $("testsBoard"); board.innerHTML = "";
+  const sorted = TESTS.slice().sort((a,b)=>a.date<b.date?-1:1);
+  sorted.forEach(t=>{
+    const ready = testReadiness(t);
+    const grade = db.grades[t.id];
+    const div = document.createElement("div");
+    div.className = "card test";
+    let html = '<div class="dline"><div><b>'+esc(t.label)+'</b> '+
+      '<span class="badge">'+esc(t.kind)+'</span><br>'+
+      '<span class="muted">'+bdi(fmtDate(t.date))+'</span></div>'+
+      '<div class="count">'+esc(countdownText(t.date))+'</div></div>';
+    if(t.desc) html += '<div class="muted" style="margin-top:4px">'+esc(t.desc)+'</div>';
+    if(ready!==null) html += '<div class="pbar" style="margin-top:8px"><i style="width:'+ready+'%"></i></div>'+
+      '<div class="muted">מוכנות: '+bdi(ready+'%')+'</div>';
+    if(grade!==undefined) html += '<div style="margin-top:4px">הציון: <b>'+bdi(grade)+'</b> 🎉</div>';
+    div.innerHTML = html;
+    board.appendChild(div);
+  });
+
+  // כרטיסי מקצועות
+  const grid = $("subjectsGrid"); grid.innerHTML = "";
+  SUBJECTS.forEach(s=>{
+    const d = document.createElement("div");
+    d.className = "subj";
+    let inner = '<div class="ico">'+s.icon+'</div><div class="nm">'+esc(s.label)+'</div>';
+    if(s.id==="math"){
+      const p = mathProgress();
+      const pct = p.tot ? Math.round(p.ans/p.tot*100) : 0;
+      inner += '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
+               '<div class="muted">'+bdi(p.ans+"/"+p.tot)+' שאלות</div>';
+    } else {
+      inner += '<span class="badge yellow">בקרוב</span>';
+    }
+    d.innerHTML = inner;
+    d.addEventListener("click", ()=>renderSubject(s.id));
+    grid.appendChild(d);
+  });
+}
+$("goMock").addEventListener("click", renderMock);
+$("goGrades").addEventListener("click", renderGrades);
+
+// ---------- מקצוע ----------
+function renderSubject(sid){
+  currentSubject = sid;
+  const s = SUBJECTS.find(x=>x.id===sid);
+  $("subjectTitle").textContent = s.icon+" "+s.label;
+  const body = $("subjectBody"); body.innerHTML = "";
+  if(sid!=="math"){
+    body.innerHTML = '<div class="card center"><div class="big-emoji">🚧</div>'+
+      '<h3>התוכן ל'+esc(s.label)+' יתווסף בקרוב!</h3>'+
+      '<p class="muted">אבא/אמא מביאים שאלות לדוגמה, ואנחנו ממלאים את התוכן.</p></div>';
+    show("subject");
+    return;
+  }
+  TOPICS.forEach(t=>{
+    let ans=0;
+    t.questions.forEach((_,qi)=>{ if(db.progress[t.id+"-"+qi]) ans++; });
+    const pct = Math.round(ans/t.questions.length*100);
+    const d = document.createElement("div");
+    d.className = "card tap";
+    d.innerHTML = "<b>"+esc(t.title)+"</b><br>"+
+      '<span class="muted">'+esc(t.subtitle)+"</span>"+
+      '<div class="pbar"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="muted">'+bdi(ans+"/"+t.questions.length)+" נענו</div>";
+    d.addEventListener("click", ()=>renderTopic(t.id));
+    body.appendChild(d);
+  });
+  show("subject");
+}
+
+// ---------- נושא: תרגול ----------
+const ST_LABEL = {answered:"עניתי ✓", correct:"צדקתי 🎉", review:"צריך חיזוק 💪"};
+function renderTopic(tid){
+  currentTopic = tid;
+  const t = TOPICS.find(x=>x.id===tid);
+  $("topicTitle").textContent = t.title;
+  $("topicSub").textContent = t.subtitle;
+  const body = $("topicBody"); body.innerHTML = "";
+  t.questions.forEach((qa,qi)=>{
+    const key = tid+"-"+qi;
+    const st = db.progress[key];
+    const card = document.createElement("div");
+    card.className = "qcard";
+    const qn = document.createElement("div");
+    qn.className = "qnum"+(st==="correct"?" done":st==="review"?" review":st?" done":"");
+    qn.textContent = qi+1;
+    const head = document.createElement("div"); head.className="qhead";
+    const tx = document.createElement("div"); tx.className="qtext"; tx.textContent = qa[0];
+    head.appendChild(qn); head.appendChild(tx);
+    card.appendChild(head);
+    const qs = document.createElement("div"); qs.className="qstatus";
+    if(!st){
+      const b = document.createElement("button");
+      b.className="btn small blue"; b.textContent="עניתי ✓";
+      b.addEventListener("click", ()=>{ db.progress[key]="answered"; touchStreak(); saveDB(); renderTopic(tid); });
+      qs.appendChild(b);
+    } else {
+      const lab = document.createElement("span");
+      lab.className = "badge "+(st==="correct"?"green":st==="review"?"yellow":"");
+      lab.textContent = ST_LABEL[st] || st;
+      qs.appendChild(lab); qs.appendChild(document.createTextNode(" "));
+      if(st==="answered"){
+        const ok = document.createElement("button");
+        ok.className="btn small"; ok.textContent="צדקתי 🎉";
+        ok.addEventListener("click", ()=>{ db.progress[key]="correct"; touchStreak(); saveDB(); renderTopic(tid); });
+        const no = document.createElement("button");
+        no.className="btn small yellow"; no.textContent="צריך חיזוק 💪";
+        no.addEventListener("click", ()=>{ db.progress[key]="review"; touchStreak(); saveDB(); renderTopic(tid); });
+        qs.appendChild(ok); qs.appendChild(no);
+      }
+      const un = document.createElement("button");
+      un.className="btn small ghost"; un.textContent="ביטול סימון";
+      un.addEventListener("click", ()=>{ delete db.progress[key]; saveDB(); renderTopic(tid); });
+      qs.appendChild(un);
+    }
+    card.appendChild(qs);
+    body.appendChild(card);
+  });
+  updateTopicProg(t);
+  show("topic");
+}
+function updateTopicProg(t){
+  let ans=0;
+  t.questions.forEach((_,qi)=>{ if(db.progress[t.id+"-"+qi]) ans++; });
+  const pct = Math.round(ans/t.questions.length*100);
+  $("topicProgBar").style.width = pct+"%";
+  $("topicProgLabel").textContent = "התקדמות: "+ans+" מתוך "+t.questions.length+" שאלות ("+pct+"%)";
+}
+
+// ---------- ציונים ----------
+function renderGrades(){
+  show("grades");
+  const ids = Object.keys(db.grades);
+  const sum = $("gradeSummary");
+  if(!ids.length){
+    sum.innerHTML = "עוד לא הוזנו ציונים. אחרי כל מבחן ההורה מזין כאן את הציון.";
+  } else {
+    const vals = ids.map(id=>({id, g:Number(db.grades[id])}))
+                    .sort((a,b)=>TESTS.find(t=>t.id===a.id).date < TESTS.find(t=>t.id===b.id).date ? -1:1);
+    const avg = Math.round(vals.reduce((s,v)=>s+v.g,0)/vals.length);
+    let trend = "";
+    if(vals.length>=2){
+      const d = vals[vals.length-1].g - vals[vals.length-2].g;
+      trend = d>0 ? "📈 במגמת שיפור!" : d<0 ? "📉 קצת ירד — לא נורא, ממשיכים!" : "➖ יציב";
+    }
+    sum.innerHTML = "ממוצע: <b>"+bdi(avg)+"</b> "+esc(trend);
+  }
+  const body = $("gradesBody"); body.innerHTML = "";
+  const sorted = TESTS.slice().sort((a,b)=>a.date<b.date?-1:1);
+  sorted.forEach(t=>{
+    const g = db.grades[t.id];
+    const d = document.createElement("div");
+    d.className = "card";
+    let html = "<b>"+esc(t.label)+"</b> "+'<span class="badge">'+esc(t.kind)+"</span> "+
+      '<span class="muted">'+bdi(fmtDate(t.date))+"</span>";
+    if(g!==undefined){
+      html += '<div class="gradebar"><div class="pbar"><i style="width:'+g+'%"></i></div>'+
+              '<div class="gnum">'+bdi(g)+'</div></div>';
+    }
+    html += '<div class="field" style="display:flex;gap:8px;margin-bottom:0">'+
+      '<input type="number" min="0" max="100" id="g-'+t.id+'" placeholder="ציון" '+
+      (g!==undefined?('value="'+g+'"'):"")+' style="max-width:110px">'+
+      '<button class="btn small blue" id="gs-'+t.id+'">שמור</button></div>';
+    d.innerHTML = html;
+    body.appendChild(d);
+  });
+  sorted.forEach(t=>{
+    $("gs-"+t.id).addEventListener("click", ()=>{
+      const v = Number($("g-"+t.id).value);
+      if(isNaN(v)||v<0||v>100){ $("g-"+t.id).focus(); return; }
+      db.grades[t.id]=v; saveDB(); renderGrades();
+    });
+  });
+}
+
+// ---------- מבחן מדמה ----------
+let mockQs=[], mockIdx=0, mockScore=0, mockTimer=null, mockLeft=0;
+function renderMock(){
+  show("mock");
+  const box = $("mockSubjects"); box.innerHTML="";
+  SUBJECTS.forEach(s=>{
+    const d = document.createElement("div");
+    d.className = "card tap";
+    if(s.id==="math"){
+      d.innerHTML = '<div class="ico" style="font-size:28px">'+s.icon+'</div><b>'+esc(s.label)+'</b> — 10 שאלות אקראיות';
+      d.addEventListener("click", ()=>startMock("math"));
+    } else {
+      d.innerHTML = '<div class="ico" style="font-size:28px">'+s.icon+'</div><b>'+esc(s.label)+'</b> <span class="badge yellow">בקרוב</span>';
+    }
+    box.appendChild(d);
+  });
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function startMock(sid){
+  const pool=[];
+  TOPICS.forEach(t=>t.questions.forEach(qa=>pool.push({topic:t.title, q:qa[0]})));
+  mockQs = shuffle(pool).slice(0,10);
+  mockIdx=0; mockScore=0; mockLeft=600;
+  show("mockrun");
+  renderMockQ();
+  clearInterval(mockTimer);
+  mockTimer = setInterval(()=>{
+    mockLeft--;
+    const m=Math.floor(mockLeft/60), s=mockLeft%60;
+    $("mockTimer").textContent = m+":"+String(s).padStart(2,"0");
+    if(mockLeft<=0){ finishMock(true); }
+  },1000);
+  $("mockTimer").textContent="10:00";
+}
+function renderMockQ(){
+  const cur = mockQs[mockIdx];
+  $("mockQNum").textContent = mockIdx+1;
+  $("mockQText").textContent = cur.q;
+  $("mockQTopic").textContent = cur.topic;
+  $("mockProg").textContent = "שאלה "+(mockIdx+1)+" מתוך 10";
+  $("mockBar").style.width = ((mockIdx+1)*10)+"%";
+}
+function mockAnswer(ok){
+  if(ok) mockScore++;
+  mockIdx++;
+  if(mockIdx>=mockQs.length) finishMock(false);
+  else renderMockQ();
+}
+$("mockRight").addEventListener("click", ()=>mockAnswer(true));
+$("mockWrong").addEventListener("click", ()=>mockAnswer(false));
+function finishMock(timeout){
+  clearInterval(mockTimer);
+  db.mockHistory.push({date:todayStr(), score:mockScore});
+  saveDB();
+  $("mockScore").textContent = mockScore+"/10";
+  $("mockEmoji").textContent = mockScore>=9?"🏆":mockScore>=7?"🌟":mockScore>=5?"💪":"🍀";
+  $("mockMsg").textContent = timeout ? "נגמר הזמן! " : "" +
+    (mockScore>=9?"מדהים! מוכנים למבחן!" : mockScore>=7?"כל הכבוד! כמעט מושלם!" :
+     mockScore>=5?"יפה! עוד קצת תרגול וזה שם." : "לא נורא — מתרגלים ומשתפרים!");
+  show("mockdone");
+}
+$("mockAgain").addEventListener("click", renderMock);
+
+// ---------- אזור הורים (נפתח בלחיצה ארוכה בלבד) ----------
+function renderParents(){
+  show("parents");
+  const body = $("parentsBody"); body.innerHTML="";
+  TOPICS.forEach(t=>{
+    const d = document.createElement("div");
+    d.className = "card";
+    let html = "<h3>"+esc(t.title)+"</h3>";
+    html += '<div class="tips"><b>💡 איך לעזור בלי לפתור</b><ul style="margin:4px 0;padding-right:18px">';
+    t.help.forEach(h=>{ html += "<li>"+esc(h)+"</li>"; });
+    html += "</ul></div>";
+    html += "<b>דף תשובות:</b><ol>";
+    t.questions.forEach((qa,qi)=>{ html += "<li><b>"+(qi+1)+".</b> "+esc(qa[1])+"</li>"; });
+    html += "</ol>";
+    d.innerHTML = html;
+    body.appendChild(d);
+  });
+}
+$("resetData").addEventListener("click", ()=>{
+  if(confirm("למחוק את כל הנתונים? (שם, התקדמות, רצף, ציונים)")){
+    db = blankDB(); saveDB(); renderSetup();
+  }
+});
+// לחיצה ארוכה 600ms על הנקודה — בלי שום רמז חזותי
+(function(){
+  const dot = $("secret-dot");
+  let t = null;
+  function start(e){ e.preventDefault(); t=setTimeout(()=>{ renderParents(); },600); }
+  function cancel(){ clearTimeout(t); }
+  dot.addEventListener("pointerdown", start);
+  dot.addEventListener("pointerup", cancel);
+  dot.addEventListener("pointerleave", cancel);
+  dot.addEventListener("pointercancel", cancel);
+  dot.addEventListener("contextmenu", e=>e.preventDefault());
+})();
+
+// ---------- אתחול ----------
+if(db.childName) renderHome(); else renderSetup();
+
+</script>
+</body>
+</html>
