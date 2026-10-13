@@ -240,12 +240,6 @@ label.fl{display:block;font-weight:700;margin-bottom:4px}
     <p class="muted">דפי תשובות וטיפים להורים בלבד.</p>
     <div id="parentsBody"></div>
     <div class="card">
-      <h3>📊 מעקב שימוש כיתתי</h3>
-      <p class="muted">מי נרשם ומתי נכנסו — לאור בלבד.</p>
-      <button class="btn blue small" id="auditLoad">טעינת נתונים</button>
-      <div id="auditOut" style="margin-top:8px"></div>
-    </div>
-    <div class="card">
       <h3>איפוס נתונים</h3>
       <p class="muted">מוחק את שם הילד/ה, ההתקדמות, הרצף והציונים מהמכשיר הזה.</p>
       <button class="btn red small" id="resetData">איפוס כל הנתונים</button>
@@ -722,43 +716,6 @@ function renderParents(){
 $("resetData").addEventListener("click", ()=>{
   if(confirm("למחוק את כל הנתונים של כל התלמידים?")){
     store = blankStore(); db = null; saveDB(); renderSetup();
-  }
-});
-// ---------- מסך audit (לאור בלבד, מוגן מפתח) ----------
-$("auditLoad").addEventListener("click", async ()=>{
-  let key = "";
-  try{ key = sessionStorage.getItem("learn67-audit-key") || ""; }catch(e){}
-  if(!key){
-    key = prompt("מפתח ניהול:") || "";
-    if(!key) return;
-  }
-  const out = $("auditOut");
-  out.innerHTML = '<p class="muted">טוען…</p>';
-  try{
-    const r = await fetch("/api/audit?key="+encodeURIComponent(key));
-    if(r.status===403){
-      try{ sessionStorage.removeItem("learn67-audit-key"); }catch(e){}
-      out.innerHTML = '<p class="muted">מפתח שגוי.</p>';
-      return;
-    }
-    if(!r.ok) throw new Error("http "+r.status);
-    const j = await r.json();
-    try{ sessionStorage.setItem("learn67-audit-key", key); }catch(e){}
-    const devs = j.devices || [];
-    if(!devs.length){ out.innerHTML = '<p class="muted">אין עדיין נתונים.</p>'; return; }
-    let html = '<p><b>'+devs.length+'</b> מכשירים נרשמו</p>'+
-      '<table style="width:100%;font-size:13px;border-collapse:collapse">';
-    html += '<tr style="text-align:right;color:#888"><th>ילד/ה</th><th>נרשם</th><th>פעילות אחרונה</th><th>כניסות</th><th>מדמים</th></tr>';
-    devs.forEach(d=>{
-      const f = (d.firstSeen||"").slice(0,10), l = (d.lastSeen||"").slice(0,10);
-      html += '<tr style="border-top:1px solid #eee;text-align:right"><td><b>'+esc(d.child||"—")+'</b></td>'+
-        '<td>'+bdi(f)+'</td><td>'+bdi(l)+'</td>'+
-        '<td>'+bdi(d.visits||0)+'</td><td>'+bdi(d.mocks||0)+'</td></tr>';
-    });
-    html += '</table>';
-    out.innerHTML = html;
-  }catch(e){
-    out.innerHTML = '<p class="muted">שגיאה בטעינה. ודאו שיש חיבור.</p>';
   }
 });
 // לחיצה ארוכה 600ms על הנקודה — בלי שום רמז חזותי
