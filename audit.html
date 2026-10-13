@@ -35,7 +35,7 @@
     <p style="margin:0 0 8px"><b id="devCount">0</b> מכשירים נרשמו</p>
     <div style="overflow-x:auto">
     <table>
-      <thead><tr><th>ילד/ה</th><th>נרשם</th><th>פעילות אחרונה</th><th>כניסות</th><th>מדמים</th></tr></thead>
+      <thead><tr><th>ילד/ה</th><th>נרשם</th><th>פעילות אחרונה</th><th>כניסות</th><th>ימי פעילות</th><th>מדמים</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
     </div>
@@ -78,10 +78,10 @@
     var html = "";
     devs.forEach(function(d){
       var f = String(d.firstSeen||"").slice(0,10);
-      var l = String(d.lastSeen||"").slice(0,10);
+      var l = String(d.lastSeen||"").slice(0,16);
       html += "<tr><td><b>"+esc(d.child||"—")+"</b></td>"+
         "<td><bdi>"+esc(f)+"</bdi></td><td><bdi>"+esc(l)+"</bdi></td>"+
-        "<td>"+esc(d.visits||0)+"</td><td>"+esc(d.mocks||0)+"</td></tr>";
+        "<td>"+esc(d.visits||0)+"</td><td>"+esc(d.activeDays||0)+"</td><td>"+esc(d.mocks||0)+"</td></tr>";
     });
     document.getElementById("rows").innerHTML = html;
   }
