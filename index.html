@@ -137,6 +137,42 @@ details.pcoll[open] .chev{transform:rotate(180deg)}
 .center{text-align:center}
 .big-emoji{font-size:56px}
 .score{font-size:60px;font-weight:800;color:var(--green-dark)}
+
+/* ===== בדיקת תשובות באפליקציה (dev) ===== */
+.answrap{margin-top:10px}
+.ansfield{font-family:inherit;font-size:20px;font-weight:700;text-align:center;
+  border:2px solid var(--line);border-radius:14px;padding:10px 8px;width:130px;
+  max-width:44vw;background:#fff;color:var(--ink);direction:ltr}
+.ansfield:focus{outline:none;border-color:var(--blue)}
+.afields{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.aflabel{font-weight:700;color:var(--muted);font-size:14px;min-width:70px}
+.cmpitem{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+.cmpbtn{min-width:54px;font-size:20px;font-weight:800;border:2px solid var(--line);
+  background:#fff;border-radius:12px;padding:8px 6px;cursor:pointer;font-family:inherit;color:var(--ink)}
+.cmpbtn.sel{background:var(--blue);border-color:var(--blue-dark);color:#fff}
+.cmpbtn.choicebtn{font-size:16px;min-width:110px}
+.fb{margin-top:8px}
+.fb-msg{background:var(--yellow-soft);border-radius:12px;padding:10px 14px;font-weight:700}
+.fb-try{background:#f4f6f8;border-radius:12px;padding:10px 14px;font-weight:700}
+.fb-ok{background:var(--green-soft);border-radius:12px;padding:10px 14px;font-weight:700;color:#2f6b00}
+.fb-ask{background:var(--blue-soft);border-radius:12px;padding:10px 14px;font-weight:700}
+.hintbox{background:#fffbe8;border:2px dashed var(--yellow-dark);border-radius:12px;
+  padding:10px 14px;margin:8px 0}
+.parentonly-note{background:#f6f8fb;border-radius:12px;padding:10px 14px;
+  color:var(--muted);font-weight:600}
+.qnum.pwait{background:var(--blue)}
+.pqrow{border-top:1px solid var(--line);padding:10px 0}
+.numpad{position:fixed;bottom:0;left:0;right:0;background:#fff;z-index:60;
+  border-top:2px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08);
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:none}
+.numpad.open{display:block}
+.np-grid{display:grid;grid-template-columns:repeat(3,72px);gap:8px;justify-content:center}
+.np-key{font-size:22px;font-weight:800;border:2px solid var(--line);background:#f8f9fb;
+  border-radius:14px;padding:9px 0;cursor:pointer;font-family:inherit}
+.np-key:active{background:#e9edf2}
+.np-key.fn{background:var(--blue-soft);border-color:var(--blue)}
+body.np-open #app{padding-bottom:300px}
+
 </style>
 </head>
 <body>
@@ -254,6 +290,7 @@ details.pcoll[open] .chev{transform:rotate(180deg)}
   </section>
 
 </div>
+<div id="numpad" class="numpad" dir="ltr"><div class="np-grid" id="npGrid"></div></div>
 <script>
 "use strict";
 /* ============================================================
@@ -287,6 +324,417 @@ TOPICS.forEach(t=>t.questions.forEach((qa,i)=>{
    learn67 — אפליקציית תרגול כיתתית, כיתה ג'
    כל הנתונים נשמרים מקומית בדפדפן (localStorage) — פרטי, בלי התחברות
    ============================================================ */
+
+/* ============================================================
+   ✅ מטא־דאטה לבדיקת תשובות (סביבת dev)
+   מפתח: "topicId-questionIndex". נשמר בנפרד מ־TOPICS כדי לא
+   לשבור את חוזה הנתונים (כל שאלה נשארת זוג [שאלה, תשובה]).
+   types: num | multi | cmp | choice | expr | exprnum | multiok
+          | word | parent | numparent | mixed
+   pq: kind של תור הורים אחרי בדיקה אוטומטית תקינה
+       (method | solution | drawing | explain)
+   ============================================================ */
+const CHECK = {
+// ---- נושא 1: מבנה עשרוני, חיבור וחיסור ----
+"1-0":{type:"multi",fields:["830","831"],flabels:["המספר הגדול ביותר","המספר העוקב"],hint:"לבניית המספר הגדול ביותר: שימו את הספרה הגדולה ביותר במאות, ואז בסדר יורד. המספר העוקב = צעד אחד קדימה."},
+"1-1":{type:"multi",fields:["205","204"],flabels:["המספר הקטן ביותר","המספר הקודם"],hint:"המספר הקטן ביותר: הספרה הקטנה ביותר שאינה אפס הולכת למאות, ואז בסדר עולה. המספר הקודם = צעד אחד אחורה."},
+"1-2":{type:"cmp",items:["<",">"],hint:"משווים משמאל לימין: קודם מאות, אחר כך עשרות. ברגע שמוצאים ספרה שונה — נגמר."},
+"1-3":{type:"multiok",v:"v1_4",nfields:2,hint:"בודקים רק את ספרת העשרות: איזו ספרה תהפוך את המספר לגדול יותר (או קטן יותר)? שימו לב — יכולות להיות כמה תשובות נכונות!"},
+"1-4":{type:"multiok",v:"v1_5",nfields:2,hint:"מה קטן מ־500? כל מספר תלת־ספרתי שמתחיל בספרה קטנה מ־5. ומה גדול מ־900? השניים חייבים להיות שונים."},
+"1-5":{type:"multi",fields:["475","670","675","706"],hint:"מסדרים מהקטן לגדול: משווים מאות קודם, ואם המאות שוות — עוברים לעשרות."},
+"1-6":{type:"cmp",items:[">","<"],hint:"לא חייבים לחשב! מחפשים מה משותף ומה שונה: אם אחד המחוברים זהה — מסתכלים רק על השני."},
+"1-7":{type:"multi",fields:["700","746"],hint:"פותרים את התרגיל הקל קודם (500 + 200), ואז מוסיפים רק את ההפרש בין 246 ל־200."},
+"1-8":{type:"num",fields:["444"],pq:"method",hint:"כותבים במאונך: יחידות מתחת ליחידות, עשרות מתחת לעשרות. כשצריך — לווים מהעשרות."},
+"1-9":{type:"multi",fields:["40","40"],hint:"בכל תרגיל שואלים: כמה חסר כדי להגיע למספר היעד?"},
+// ---- נושא 2: משמעות הכפל והחילוק ----
+"2-0":{type:"parent",kind:"drawing"},
+"2-1":{type:"expr",fields:["4*6=24","6+6+6+6=24"],hint:"4 שורות של 6 = 4 פעמים 6. בתרגיל החיבור החוזר כותבים את ה־6 ארבע פעמים."},
+"2-2":{type:"cmp",items:["=","="],hint:"כפל הוא קיצור של חיבור חוזר — 8 × 3 זה בעצם 8 + 8 + 8. ובכפל הסדר לא משנה!"},
+"2-3":{type:"cmp",items:["<",">"],hint:"בלי לחשב: אם הגורם הראשון זהה בשני הצדדים — מסתכלים רק על הגורם השני."},
+"2-4":{type:"multi",fields:["5","7"],hint:"חוזרים ללוח הכפל: איזה מספר כפול 8 נותן 40? ואיזה מספר כפול 5 נותן 35?"},
+"2-5":{type:"exprnum",expr:["7*9=63"],nums:["9"],hint:"בחילוק תמיד שואלים: איזה מספר כפול 7 נותן 63? את התרגיל הזה כותבים ראשון."},
+"2-6":{type:"parent",kind:"drawing"},
+"2-7":{type:"multiok",v:"v2_8",nfields:4,flabels:["מנה 1","מנה 2","מנה 3","מהקטנה לגדולה"],hint:"פותרים כל תרגיל חילוק בנפרד, ואז מסדרים את התשובות מהקטנה לגדולה."},
+"2-8":{type:"multiok",v:"v2_9",nfields:2,kind:"expr",hint:"לא חייבים לחשב עד הסוף — אפשר להעריך. למשל: 12 לחלק ל־4 זה בערך 3."},
+"2-9":{type:"parent",kind:"explain"},
+// ---- נושא 3: ישר המספרים ----
+"3-0":{type:"multi",fields:["91","200","610"],hint:"העוקב = צעד אחד קדימה. ליד מאות עגולות (199 ← 200) כדאי לומר את הרצף בקול."},
+"3-1":{type:"multi",fields:["79","499","300"],hint:"הקודם = צעד אחד אחורה. זהירות ליד 500 ו־300 — שם טועים הכי הרבה!"},
+"3-2":{type:"multi",fields:["898","900"],hint:"מ־899 זזים צעד אחד אחורה וצעד אחד קדימה."},
+"3-3":{type:"multi",fields:["635","655"],hint:"קודם מוצאים את גודל הקפיצה: מפחיתים שני מספרים סמוכים. ורק אז ממשיכים."},
+"3-4":{type:"multi",fields:["440","420"],hint:"הסדרה יורדת — כל פעם מפחיתים 20."},
+"3-5":{type:"multiok",v:"v3_6",nfields:5,flabels:["מספר 1","מספר 2","מספר 3","מספר 4","גודל הקפיצה"],hint:"בוחרים גודל קפיצה שאוהבים (למשל 50), ובונים ארבעה מספרים בהפרשים שווים."},
+"3-6":{type:"num",fields:["250"],hint:"האמצע = חצי הדרך: מחשבים את המרחק בין 200 ל־300, חוצים לשניים, ומתקדמים מהמספר הקטן."},
+"3-7":{type:"num",fields:["155"],hint:"3 קפיצות של 10 הן 30 בסך הכול. מוסיפים ל־125."},
+"3-8":{type:"num",fields:["50"],hint:"מרחק = המספר הגדול פחות המספר הקטן."},
+"3-9":{type:"multi",fields:["304","340","403","430"],hint:"מסדרים מהקטן לגדול: קודם מאות, ואם שווה — עשרות."},
+// ---- נושא 4: שאלות מילוליות (מספר סופי אוטומטי + הורה מסמן פתרון) ----
+"4-0":{type:"word",finals:["473"],pq:"solution",hint:"היו 325 ספרים ותרמו עוד 148 — מחברים את שני המספרים."},
+"4-1":{type:"word",finals:["425","250"],flabels:["א","ב"],pq:"solution",hint:"חלק א׳: כמה ליטרים נשארו? חלק ב׳: משווים בין מה שהשתמשו לבין מה שנשאר — מפחיתים."},
+"4-2":{type:"word",finals:["56"],pq:"solution",hint:"7 קופסאות עם 8 טושים בכל אחת — זה תרגיל כפל."},
+"4-3":{type:"word",finals:["9"],pq:"solution",hint:"מחלקים שווה בשווה: איזה מספר כפול 5 נותן 45?"},
+"4-4":{type:"word",finals:["55","67"],flabels:["תוצאת הביניים","התוצאה הסופית"],pq:"solution",hint:"בעיה דו־שלבית: קודם מפחיתים את ה־29 וכותבים את תוצאת הביניים, ורק אז מוסיפים 12."},
+"4-5":{type:"word",finals:["90","73"],flabels:["תוצאת הביניים","התוצאה הסופית"],pq:"solution",hint:"שלב ראשון: כמה כיסאות יש באולם? שלב שני: כמה מהם נתפסו?"},
+"4-6":{type:"word",finals:["24","27"],flabels:["תוצאת הביניים","התוצאה הסופית"],pq:"solution",hint:"קודם כמה ילדים יש ב־4 הקבוצות, ואז מוסיפים את 3 המדריכים."},
+"4-7":{type:"multiok",v:"v4_8",nfields:2,flabels:["אפשרות 1","אפשרות 2"],pq:"explain",hint:"בסוף יש פחות מ־50 גולות: 20 + 12 = 32, אז כמה עוד אפשר להרוויח במשחק השני? צריך שתי אפשרויות שונות!"},
+"4-8":{type:"word",finals:["64"],pq:"solution",hint:"מחברים את העמודים של שני הימים."},
+"4-9":{type:"word",finals:["402"],pq:"solution",hint:"בוקר + ערב = סך כל הקילומטרים."},
+// ---- נושא 5: אורך ושטח ----
+"5-0":{type:"choice",options:["סנטימטרים","מטרים"],answer:0,hint:"עיפרון הוא קצר — באיזו יחידה מודדים דברים קצרים?"},
+"5-1":{type:"choice",options:["סנטימטרים","מטרים"],answer:1,hint:"כיתה היא גדולה — אורך של 500 סנטימטר נשמע לא הגיוני, נכון?"},
+"5-2":{type:"num",fields:["100"],hint:"מטר אחד הוא 100 סנטימטרים — מספר עגול שקל לזכור."},
+"5-3":{type:"word",finals:["93"],pq:"solution",hint:"אורכם יחד = מחברים את שני האורכים."},
+"5-4":{type:"choice",options:["אורך","שטח"],answer:1,hint:"יחידות ריבועיות מודדות משהו דו־ממדי — אורך או שטח?"},
+"5-5":{type:"numparent",fields:["24"],pq:"drawing",hint:"שטח = אורך כפול רוחב. וגם: סופרים כמה ריבועים של ס״מ אחד נכנסים במלבן."},
+"5-6":{type:"word",finals:["27"],pq:"solution",hint:"שטח מלבן = אורך כפול רוחב."},
+"5-7":{type:"num",fields:["5"],hint:"נתון השטח (40) וצלע אחת (8): איזה מספר כפול 8 נותן 40?"},
+"5-8":{type:"mixed",fields:["20","21"],flabels:["שטח א׳","שטח ב׳"],options:["א׳","ב׳"],answer:1,hint:"מחשבים את שני השטחים וכותבים זה לצד זה — לא מנחשים לפי המראה."},
+"5-9":{type:"num",fields:["50"],hint:"כל אריח מכסה מטר רבוע אחד — אז מספר האריחים שווה לשטח הרצפה."}
+};
+
+/* ============================================================
+   ✅ מנוע בדיקת תשובות (סביבת dev)
+   עקרון: האפליקציה בודקת תוצאה, לא דרך. הדרך נשארת באחריות ההורה.
+   מדיניות ניסיונות: 1 → "נסה שוב" | 2 → רמז (בלי התשובה!) |
+   3 → "בקש עזרה מהורה" + סימון אוטומטי "צריך חיזוק".
+   התשובה אף פעם לא נחשפת לילד — היא נשארת באזור ההורים.
+   ============================================================ */
+function normNum(s){ return String(s==null?"":s).replace(/[\s,]/g,"").trim(); }
+function numEq(a,b){ const na=normNum(a); return na!=="" && Number(na)===Number(normNum(b)); }
+function normExpr(s){
+  return String(s||"").replace(/[×xX\*]/g,"*").replace(/[÷:]/g,"/")
+    .replace(/\s+/g,"").replace(/,(\d)/g,"$1");
+}
+// מנתח "12÷4=3" → 3 ; מחזיר null אם לא תרגיל חילוק תקין
+function parseDivQ(s){
+  const t = normExpr(s);
+  const m = t.match(/^(\d+)\/(\d+)=(\d+)$/);
+  if(!m) return null;
+  const a=+m[1], b=+m[2], c=+m[3];
+  if(b===0 || a/b!==c) return null;
+  return c;
+}
+// ולידטורים לשאלות עם כמה תשובות נכונות
+const V = {
+  v1_4(vals){ // ספרה ל־6_4>674 (8/9) ; ספרה ל־7_5<775 (0-6)
+    return /^[89]$/.test(normNum(vals[0])) && /^[0-6]$/.test(normNum(vals[1]));
+  },
+  v1_5(vals){ // מספר <500 ומספר >900, שונים
+    const a=Number(normNum(vals[0])), b=Number(normNum(vals[1]));
+    return Number.isFinite(a)&&Number.isFinite(b)&&a<500&&b>900&&a!==b;
+  },
+  v2_8(vals){ // 3 מנות + סדר עולה שלהן
+    const ns=vals.slice(0,3).map(v=>Number(normNum(v)));
+    return ns[0]===4&&ns[1]===4&&ns[2]===9 && normNum(vals[3]).replace(/\D/g,"")==="449";
+  },
+  v2_9(vals){ // שני תרגילי חילוק: מנה<5 ומנה>5
+    const q=vals.map(parseDivQ);
+    return q[0]!==null&&q[1]!==null&&q[0]<5&&q[1]>5;
+  },
+  v3_6(vals){ // 4 מספרים בקפיצות שוות + גודל הקפיצה
+    const ns=vals.slice(0,4).map(v=>Number(normNum(v))), j=Number(normNum(vals[4]));
+    if(ns.some(n=>!Number.isFinite(n))||!Number.isFinite(j)||j<=0) return false;
+    return ns[1]-ns[0]===j && ns[2]-ns[1]===j && ns[3]-ns[2]===j;
+  },
+  v4_8(vals){ // שתי אפשרויות 11-17, שונות
+    const a=Number(normNum(vals[0])), b=Number(normNum(vals[1]));
+    return [a,b].every(n=>Number.isInteger(n)&&n>=11&&n<=17) && a!==b;
+  }
+};
+
+// ---------- מצב ניסיונות (מקומי, לכל תלמיד/ה) ----------
+function getAns(key){
+  db.ans = db.ans || {};
+  return db.ans[key] || (db.ans[key]={n:0});
+}
+function pqAdd(key,kind){
+  db.pq = db.pq || [];
+  if(!db.pq.some(x=>x.key===key)) db.pq.push({key, kind});
+}
+function pqRemove(key){
+  db.pq = db.pq || [];
+  db.pq = db.pq.filter(x=>x.key!==key);
+}
+function resetQuestion(tid,qi){
+  const key = tid+"-"+qi;
+  delete db.progress[key];
+  if(db.ans) delete db.ans[key];
+  pqRemove(key);
+  saveDB(); renderTopic(tid);
+}
+
+// ---------- מקלדת מספרים פנימית ----------
+let npTarget=null;
+const SEL={}, FIELDS={}; // בחירות כפתורים ושדות לכל שאלה
+function npBuild(){
+  const grid=$("npGrid");
+  const keys=[["1","2","3"],["4","5","6"],["7","8","9"],["×","0","÷"],["=","⌫","✕"]];
+  keys.flat().forEach(ch=>{
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=ch; b.dir="ltr";
+    b.className="np-key"+("⌫✕".indexOf(ch)>=0?" fn":("×÷=".indexOf(ch)>=0?" np-sym":""));
+    b.addEventListener("click",()=>{
+      if(ch==="✕"){ npHide(); return; }
+      if(!npTarget) return;
+      if(ch==="⌫") npTarget.value=npTarget.value.slice(0,-1);
+      else npTarget.value+=ch;
+    });
+    grid.appendChild(b);
+  });
+}
+function npShow(input,kind){
+  npTarget=input;
+  document.querySelectorAll("#npGrid .np-sym").forEach(b=>{
+    b.style.display = kind==="expr" ? "" : "none";
+  });
+  $("numpad").classList.add("open");
+  document.body.classList.add("np-open");
+}
+function npHide(){
+  npTarget=null;
+  $("numpad").classList.remove("open");
+  document.body.classList.remove("np-open");
+}
+
+// ---------- בניית שדות קלט ----------
+function mkField(key,fi,kind,ph){
+  const inp=document.createElement("input");
+  inp.type="text"; inp.readOnly=true; inp.dir="ltr";
+  inp.className="ansfield"; inp.placeholder=ph||"";
+  inp.setAttribute("inputmode","none");
+  inp.addEventListener("click",()=>npShow(inp,kind));
+  (FIELDS[key]=FIELDS[key]||[])[fi]=inp;
+  return inp;
+}
+function fieldRow(labelText,input){
+  const row=document.createElement("div");
+  row.className="afields";
+  if(labelText){ const l=document.createElement("span"); l.className="aflabel"; l.textContent=labelText; row.appendChild(l); }
+  row.appendChild(input);
+  return row;
+}
+function buildFields(wrap,t,qi,key,meta){
+  FIELDS[key]=[]; SEL[key]={};
+  const flabels=meta.flabels||[];
+  const lab=i=>flabels[i]||("שדה "+(i+1));
+  if(meta.type==="num"||meta.type==="multi"||meta.type==="numparent"||meta.type==="word"){
+    meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"num"))));
+  } else if(meta.type==="expr"){
+    meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"expr","למשל: 4×6=24"))));
+  } else if(meta.type==="exprnum"){
+    wrap.appendChild(fieldRow("התרגיל",mkField(key,0,"expr","7×9=63")));
+    wrap.appendChild(fieldRow("התשובה",mkField(key,1,"num")));
+  } else if(meta.type==="multiok"){
+    for(let i=0;i<meta.nfields;i++)
+      wrap.appendChild(fieldRow(lab(i),mkField(key,i,meta.kind==="expr"?"expr":"num")));
+  } else if(meta.type==="mixed"){
+    meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"num"))));
+    wrap.appendChild(choiceRow(key,meta,meta.options,meta.answer));
+  } else if(meta.type==="cmp"){
+    const parts=String(t.questions[qi][0]).split(";");
+    meta.items.forEach((_,i)=>{
+      const row=document.createElement("div"); row.className="cmpitem";
+      const txt=document.createElement("span"); txt.style.flex="1";
+      txt.textContent=(parts.length===meta.items.length?parts[i].replace(/^סמנו.*?:/,"").trim():"סעיף "+(i+1));
+      row.appendChild(txt);
+      ["<","=",">"].forEach(sym=>{
+        const b=document.createElement("button");
+        b.type="button"; b.className="cmpbtn"; b.dir="ltr"; b.textContent=sym;
+        b.addEventListener("click",()=>{
+          SEL[key].cmp=SEL[key].cmp||[];
+          SEL[key].cmp[i]=sym;
+          row.querySelectorAll(".cmpbtn").forEach(x=>x.classList.remove("sel"));
+          b.classList.add("sel");
+        });
+        row.appendChild(b);
+      });
+      wrap.appendChild(row);
+    });
+  } else if(meta.type==="choice"){
+    wrap.appendChild(choiceRow(key,meta,meta.options,meta.answer));
+  }
+}
+function choiceRow(key,meta,options,answer){
+  const row=document.createElement("div"); row.className="cmpitem";
+  options.forEach((op,i)=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="cmpbtn choicebtn"; b.textContent=op; b.style.minWidth="110px";
+    b.addEventListener("click",()=>{
+      SEL[key].choice=i;
+      row.querySelectorAll(".cmpbtn").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel");
+    });
+    row.appendChild(b);
+  });
+  return row;
+}
+
+// ---------- קריאת תשובות והרצת בדיקה ----------
+function readAnsData(key,meta){
+  const d={};
+  if(meta.type==="num"||meta.type==="multi"||meta.type==="numparent"||meta.type==="word"){
+    d.fields=(FIELDS[key]||[]).map(el=>el.value);
+  } else if(meta.type==="expr"){
+    d.fields=(FIELDS[key]||[]).map(el=>el.value);
+  } else if(meta.type==="exprnum"){
+    d.expr=[(FIELDS[key][0]||{value:""}).value]; d.nums=[(FIELDS[key][1]||{value:""}).value];
+  } else if(meta.type==="multiok"){
+    d.fields=(FIELDS[key]||[]).map(el=>el.value);
+  } else if(meta.type==="mixed"){
+    d.fields=(FIELDS[key]||[]).map(el=>el.value); d.choice=(SEL[key]||{}).choice;
+  } else if(meta.type==="cmp"){
+    d.sel=(SEL[key]||{}).cmp||[];
+  } else if(meta.type==="choice"){
+    d.choice=(SEL[key]||{}).choice;
+  }
+  return d;
+}
+function runCheck(meta,d){
+  const need=(arr)=>arr.some(v=>v==null||String(v).trim()==="");
+  switch(meta.type){
+    case "num": case "multi": case "numparent":
+      if(need(d.fields)) return {missing:true};
+      return {ok: d.fields.length===meta.fields.length && d.fields.every((v,i)=>numEq(v,meta.fields[i]))};
+    case "word":
+      if(need(d.fields)) return {missing:true};
+      return {ok: d.fields.length===meta.finals.length && d.fields.every((v,i)=>numEq(v,meta.finals[i]))};
+    case "expr":
+      if(need(d.fields)) return {missing:true};
+      return {ok: d.fields.length===meta.fields.length && d.fields.every((v,i)=>normExpr(v)===meta.fields[i])};
+    case "exprnum":
+      if(need(d.expr)||need(d.nums)) return {missing:true};
+      return {ok: normExpr(d.expr[0])===meta.expr[0] && numEq(d.nums[0],meta.nums[0])};
+    case "multiok":
+      if(need(d.fields)||d.fields.length<meta.nfields) return {missing:true};
+      return {ok: !!V[meta.v](d.fields)};
+    case "cmp":
+      if(d.sel.length<meta.items.length||d.sel.some(v=>!v)) return {missing:true};
+      return {ok: d.sel.every((v,i)=>v===meta.items[i])};
+    case "choice":
+      if(d.choice==null) return {missing:true};
+      return {ok: d.choice===meta.answer};
+    case "mixed":
+      if(need(d.fields)||d.choice==null) return {missing:true};
+      return {ok: d.fields.every((v,i)=>numEq(v,meta.fields[i])) && d.choice===meta.answer};
+  }
+  return {ok:false};
+}
+
+// ---------- רינדור אזור התשובה בכרטיס שאלה ----------
+const ST_LABEL_NEW={answered:"ממתין להורה ⏳",correct:"נכון! 🎉",review:"צריך חיזוק 💪"};
+function renderAnsUI(card,t,qi,key,st){
+  const meta=CHECK[key];
+  const wrap=document.createElement("div");
+  wrap.className="answrap";
+  if(st){
+    const lab=document.createElement("span");
+    lab.className="badge "+(st==="correct"?"green":st==="review"?"yellow":"");
+    lab.textContent=ST_LABEL_NEW[st]||st;
+    wrap.appendChild(lab);
+    if(st==="answered"){
+      const note=document.createElement("div");
+      note.className="muted"; note.style.marginTop="6px";
+      note.textContent="ממתין לסימון ההורה באזור ההורים ⏳";
+      wrap.appendChild(note);
+    }
+    wrap.appendChild(document.createTextNode(" "));
+    const rs=document.createElement("button");
+    rs.className="btn small ghost"; rs.textContent="↺ לנסות מחדש";
+    rs.addEventListener("click",()=>resetQuestion(t.id,qi));
+    wrap.appendChild(rs);
+  } else if(!meta||meta.type==="parent"){
+    const note=document.createElement("div");
+    note.className="parentonly-note";
+    note.textContent=(meta&&meta.kind==="drawing")
+      ? "🎨 שאלת ציור — מציירים על דף, וההורה מסמן באזור ההורים."
+      : "💬 שאלת הסבר — עונים בעל פה, וההורה מסמן באזור ההורים.";
+    wrap.appendChild(note);
+  } else {
+    buildFields(wrap,t,qi,key,meta);
+    const fb=document.createElement("div");
+    fb.className="fb"; fb.id="fb-"+key;
+    wrap.appendChild(fb);
+    const btn=document.createElement("button");
+    btn.type="button"; btn.className="btn small blue"; btn.textContent="בדוק ✓";
+    btn.style.marginTop="8px";
+    btn.addEventListener("click",()=>{ npHide(); checkQuestion(t.id,qi); });
+    wrap.appendChild(btn);
+  }
+  card.appendChild(wrap);
+}
+function checkQuestion(tid,qi){
+  const key=tid+"-"+qi, meta=CHECK[key];
+  if(!meta) return;
+  const r=runCheck(meta,readAnsData(key,meta));
+  const fb=$("fb-"+key);
+  if(r.missing){ fb.innerHTML='<div class="fb-msg">מלאו את כל השדות קודם 🙂</div>'; return; }
+  const a=getAns(key);
+  if(r.ok){
+    a.n=0; 
+    if(meta.pq){
+      db.progress[key]="answered";
+      pqAdd(key,meta.pq);
+      touchStreak(); saveDB();
+      fb.innerHTML='<div class="fb-ok">נכון! 🎉 '+(meta.pq==="solution"?"עכשיו כתבו על דף את הפתרון והתשובה המילולית — ":"")+'ההורה מסמן את ההמשך באזור ההורים.</div>';
+    } else {
+      db.progress[key]="correct";
+      touchStreak(); saveDB();
+      fb.innerHTML='<div class="fb-ok">נכון! 🎉 כל הכבוד!</div>';
+    }
+    setTimeout(()=>renderTopic(tid),1100);
+  } else {
+    a.n++; saveDB();
+    if(a.n===1){
+      fb.innerHTML='<div class="fb-try">נסה שוב 🌱 — טעות קטנה, זה קורה לכולם</div>';
+    } else if(a.n===2){
+      fb.innerHTML='<div class="hintbox">💡 <b>רמז:</b> '+esc(meta.hint||"")+'</div><div class="fb-try">נסה שוב</div>';
+    } else {
+      db.progress[key]="review";
+      touchStreak(); saveDB();
+      fb.innerHTML='<div class="fb-ask">🙋 נראה שצריך עזרה — קרא להורה. השאלה סומנה ״צריך חיזוק״.</div>';
+      setTimeout(()=>renderTopic(tid),1400);
+    }
+  }
+}
+
+// ---------- תור הורים: "ממתין לבדיקת הורה" ----------
+const PQ_LABEL={method:"🔍 בדיקת הדרך",solution:"📝 פתרון + תשובה מילולית",drawing:"🎨 ציור",explain:"💬 הסבר"};
+function renderPQueue(body){
+  db.pq=db.pq||[];
+  const items=db.pq.slice();
+  TOPICS.forEach(t=>t.questions.forEach((qa,qi)=>{
+    const key=t.id+"-"+qi, meta=CHECK[key];
+    if(meta&&meta.type==="parent"&&!db.progress[key]&&!db.pq.some(x=>x.key===key))
+      items.push({key,kind:meta.kind});
+  }));
+  if(!items.length) return;
+  const card=document.createElement("div");
+  card.className="card";
+  card.innerHTML="<h3>📋 ממתין לבדיקת הורה</h3><p class='muted'>הילד/ה ענה/תה — נשאר הסימון שלך:</p>";
+  items.forEach(it=>{
+    const parts=it.key.split("-"), tid=+parts[0], qi=+parts[1];
+    const t=TOPICS.find(x=>x.id===tid);
+    const row=document.createElement("div");
+    row.className="pqrow";
+    const info=document.createElement("div");
+    info.innerHTML="<b>"+esc(t.title)+" · שאלה "+(qi+1)+"</b><br><span class='muted'>"+esc(PQ_LABEL[it.kind]||it.kind)+"</span>"+
+      "<div style='font-size:13px;color:#555'>"+esc(String(t.questions[qi][0]).slice(0,110))+"</div>";
+    row.appendChild(info);
+    const br=document.createElement("div");
+    br.className="btnrow"; br.style.marginTop="6px";
+    const okB=document.createElement("button");
+    okB.className="btn small";
+    okB.textContent=it.kind==="method"?"✓ הדרך נכונה":"✓ נכון";
+    okB.addEventListener("click",()=>{ db.progress[it.key]="correct"; pqRemove(it.key); touchStreak(); saveDB(); renderParents(); });
+    const noB=document.createElement("button");
+    noB.className="btn small yellow"; noB.textContent="צריך חיזוק 💪";
+    noB.addEventListener("click",()=>{ db.progress[it.key]="review"; pqRemove(it.key); saveDB(); renderParents(); });
+    br.appendChild(okB); br.appendChild(noB);
+    row.appendChild(br);
+    card.appendChild(row);
+  });
+  body.appendChild(card);
+}
 
 // ---------- מבחנים כיתתיים (מלוח המבחנים) ----------
 const TESTS = [
@@ -540,7 +988,7 @@ function renderSubject(sid){
 }
 
 // ---------- נושא: תרגול ----------
-const ST_LABEL = {answered:"עניתי ✓", correct:"צדקתי 🎉", review:"צריך חיזוק 💪"};
+const ST_LABEL = {answered:"ממתין להורה ⏳", correct:"נכון! 🎉", review:"צריך חיזוק 💪"};
 function renderTopic(tid){
   currentTopic = tid;
   const t = TOPICS.find(x=>x.id===tid);
@@ -553,38 +1001,13 @@ function renderTopic(tid){
     const card = document.createElement("div");
     card.className = "qcard";
     const qn = document.createElement("div");
-    qn.className = "qnum"+(st==="correct"?" done":st==="review"?" review":st?" done":"");
+    qn.className = "qnum"+(st==="correct"?" done":st==="review"?" review":st==="answered"?" pwait":st?" done":"");
     qn.textContent = qi+1;
     const head = document.createElement("div"); head.className="qhead";
     const tx = document.createElement("div"); tx.className="qtext"; tx.textContent = qa[0];
     head.appendChild(qn); head.appendChild(tx);
     card.appendChild(head);
-    const qs = document.createElement("div"); qs.className="qstatus";
-    if(!st){
-      const b = document.createElement("button");
-      b.className="btn small blue"; b.textContent="עניתי ✓";
-      b.addEventListener("click", ()=>{ db.progress[key]="answered"; touchStreak(); saveDB(); renderTopic(tid); });
-      qs.appendChild(b);
-    } else {
-      const lab = document.createElement("span");
-      lab.className = "badge "+(st==="correct"?"green":st==="review"?"yellow":"");
-      lab.textContent = ST_LABEL[st] || st;
-      qs.appendChild(lab); qs.appendChild(document.createTextNode(" "));
-      if(st==="answered"){
-        const ok = document.createElement("button");
-        ok.className="btn small"; ok.textContent="צדקתי 🎉";
-        ok.addEventListener("click", ()=>{ db.progress[key]="correct"; touchStreak(); saveDB(); renderTopic(tid); });
-        const no = document.createElement("button");
-        no.className="btn small yellow"; no.textContent="צריך חיזוק 💪";
-        no.addEventListener("click", ()=>{ db.progress[key]="review"; touchStreak(); saveDB(); renderTopic(tid); });
-        qs.appendChild(ok); qs.appendChild(no);
-      }
-      const un = document.createElement("button");
-      un.className="btn small ghost"; un.textContent="ביטול סימון";
-      un.addEventListener("click", ()=>{ delete db.progress[key]; saveDB(); renderTopic(tid); });
-      qs.appendChild(un);
-    }
-    card.appendChild(qs);
+    renderAnsUI(card, t, qi, key, st);
     body.appendChild(card);
   });
   updateTopicProg(t);
@@ -725,6 +1148,7 @@ $("mockAgain").addEventListener("click", renderMock);
 function renderParents(){
   show("parents");
   const body = $("parentsBody"); body.innerHTML="";
+  renderPQueue(body);
   // דפי תשובות לפי מבחן (מהלוח) — כל מבחן מציג את הנושאים המשויכים אליו
   const sorted = TESTS.slice().sort((a,b)=>a.date<b.date?-1:1);
   sorted.forEach(t=>{
@@ -777,6 +1201,7 @@ $("resetData").addEventListener("click", ()=>{
 })();
 
 // ---------- אתחול ----------
+npBuild();
 if(store.current && db){ renderHome(); reportVisit(); } else renderSetup();
 
 </script>
