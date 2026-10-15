@@ -517,8 +517,14 @@ function buildFields(wrap,t,qi,key,meta){
   FIELDS[key]=[]; SEL[key]={};
   const flabels=meta.flabels||[];
   const lab=i=>flabels[i]||("שדה "+(i+1));
-  if(meta.type==="num"||meta.type==="multi"||meta.type==="numparent"||meta.type==="word"){
+  if(meta.type==="num"||meta.type==="multi"||meta.type==="numparent"){
     meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"num"))));
+  } else if(meta.type==="word"){
+    // שאלות מילוליות: המספרים הסופיים נמצאים ב־finals (לא ב־fields) —
+    // בעבר זה זרק TypeError והפיל את renderTopic, כך שהנושא לא נפתח בכלל
+    meta.finals.forEach((_,i)=>wrap.appendChild(fieldRow(
+      flabels[i]||(meta.finals.length===1?"התשובה הסופית":"תשובה "+(i+1)),
+      mkField(key,i,"num"))));
   } else if(meta.type==="expr"){
     meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"expr","למשל: 4×6=24"))));
   } else if(meta.type==="exprnum"){
