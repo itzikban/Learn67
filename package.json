@@ -1,0 +1,1 @@
+{"description":"learn67 — class study app, 3rd grade. Static site + smoke tests.","devDependencies":{"@playwright/test":"^1.55.0"},"name":"learn67","private":true,"scripts":{"test":"node tests/check-coverage.js && npx playwright test","test:e2e":"npx playwright test","test:static":"node tests/check-coverage.js"},"version":"1.0.0"}
