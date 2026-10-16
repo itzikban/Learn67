@@ -526,9 +526,9 @@ function buildFields(wrap,t,qi,key,meta){
       flabels[i]||(meta.finals.length===1?"התשובה הסופית":"תשובה "+(i+1)),
       mkField(key,i,"num"))));
   } else if(meta.type==="expr"){
-    meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"expr","למשל: 4×6=24"))));
+    meta.fields.forEach((_,i)=>wrap.appendChild(fieldRow(lab(i),mkField(key,i,"expr"))));
   } else if(meta.type==="exprnum"){
-    wrap.appendChild(fieldRow("התרגיל",mkField(key,0,"expr","7×9=63")));
+    wrap.appendChild(fieldRow("התרגיל",mkField(key,0,"expr")));
     wrap.appendChild(fieldRow("התשובה",mkField(key,1,"num")));
   } else if(meta.type==="multiok"){
     for(let i=0;i<meta.nfields;i++)
