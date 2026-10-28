@@ -593,13 +593,42 @@ function buildFields(wrap,t,qi,key,meta){
     wrap.appendChild(choiceRow(key,meta,meta.options,meta.answer));
   }
 }
+// ערבוב דטרמיניסטי של אפשרויות בחירה לפי מזהה השאלה —
+// התשובה הנכונה אסור שתשב תמיד באותו מקום (למשל תמיד ראשונה),
+// אחרת אפשר לעבור בלי לקרוא. אותו סדר בכל רינדור של אותה שאלה,
+// כדי שהכפתורים לא יקפצו ממקום למקום.
+function hashKey(key){
+  let h = 0x811c9dc5;
+  for(let i=0;i<key.length;i++){ h ^= key.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+  return h >>> 0;
+}
+function shuffleSeeded(key, arr){
+  let s = hashKey(key) || 1;
+  const rnd = ()=>{ s = (s*1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
 function choiceRow(key,meta,options,answer){
   const row=document.createElement("div"); row.className="cmpitem";
-  options.forEach((op,i)=>{
+  // מיקום התשובה הנכונה נגזר מהמזהה — משתנה משאלה לשאלה, יציב בכל רינדור.
+  // בלי זה, Fisher-Yates רגיל משאיר את האפשרות הראשונה במקומה ברוב המקרים,
+  // ושתי שאלות הבחירה החדשות נחתו שתיהן כשהתשובה הנכונה ראשונה.
+  let order;
+  if(answer>=0 && answer<options.length){
+    const others = shuffleSeeded(key, options.map((_,i)=>i).filter(i=>i!==answer));
+    order = others.slice();
+    order.splice(hashKey(key) % options.length, 0, answer);
+  } else {
+    order = options.map((_,i)=>i);
+  }
+  order.forEach((origI)=>{
+    const op = options[origI];
     const b=document.createElement("button");
     b.type="button"; b.className="cmpbtn choicebtn"; b.textContent=op; b.style.minWidth="110px";
     b.addEventListener("click",()=>{
-      SEL[key].choice=i;
+      SEL[key].choice=origI;
       row.querySelectorAll(".cmpbtn").forEach(x=>x.classList.remove("sel"));
       b.classList.add("sel");
     });
