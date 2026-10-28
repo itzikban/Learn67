@@ -901,7 +901,7 @@ function touchStreak(){
 }
 
 // ---------- ניווט בין מסכים ----------
-let currentSubject = null, currentTopic = null;
+let currentSubject = null, currentTopic = null, currentTest = null;
 function show(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   $("view-"+id).classList.add("active");
@@ -912,7 +912,7 @@ document.addEventListener("click", e=>{
   if(!b) return;
   const to = b.getAttribute("data-back");
   if(to==="home") renderHome();
-  else if(to==="subject") renderSubject(currentSubject);
+  else if(to==="subject") renderSubject(currentSubject, currentTest);
 });
 
 // ---------- מסך פתיחה: בחירת תלמיד/ה ----------
@@ -950,9 +950,10 @@ $("setupGo").addEventListener("click", ()=>{
 
 $("switchChild").addEventListener("click", renderSetup);
 // ---------- מסך בית ----------
-function mathProgress(){
+function mathProgress(testId){
   let ans=0, tot=0;
   TOPICS.forEach(t=>{
+    if(testId && (t.tests||[]).indexOf(testId)<0) return;
     t.questions.forEach((_,qi)=>{
       tot++;
       if(db.progress[t.id+"-"+qi]) ans++;
@@ -962,7 +963,7 @@ function mathProgress(){
 }
 function testReadiness(test){
   if(test.subject!=="math") return null; // אין עדיין תוכן
-  const p = mathProgress();
+  const p = mathProgress(test.id);
   return p.tot ? Math.round(p.ans/p.tot*100) : 0;
 }
 function renderHome(){
@@ -989,7 +990,7 @@ function renderHome(){
     div.innerHTML = html;
     // לחיצה על כרטיס מבחן נכנסת ישר למסך המקצוע — בלי כפתורים נוספים
     div.classList.add("tap");
-    div.addEventListener("click", ()=>renderSubject(t.subject));
+    div.addEventListener("click", ()=>renderSubject(t.subject, t.id));
     board.appendChild(div);
   });
 
@@ -998,10 +999,11 @@ $("goMock").addEventListener("click", renderMock);
 $("goGrades").addEventListener("click", renderGrades);
 
 // ---------- מקצוע ----------
-function renderSubject(sid){
-  currentSubject = sid;
+function renderSubject(sid, testId){
+  currentSubject = sid; currentTest = testId || null;
   const s = SUBJECTS.find(x=>x.id===sid);
-  $("subjectTitle").textContent = s.icon+" "+s.label;
+  const test = testId ? TESTS.find(x=>x.id===testId) : null;
+  $("subjectTitle").textContent = s.icon+" "+s.label+(test ? " · "+fmtDate(test.date) : "");
   const body = $("subjectBody"); body.innerHTML = "";
   if(sid!=="math"){
     body.innerHTML = '<div class="card center"><div class="big-emoji">🚧</div>'+
@@ -1010,7 +1012,15 @@ function renderSubject(sid){
     show("subject");
     return;
   }
-  TOPICS.forEach(t=>{
+  const list = testId ? TOPICS.filter(t=>(t.tests||[]).indexOf(testId)>=0) : TOPICS;
+  if(!list.length){
+    body.innerHTML = '<div class="card center"><div class="big-emoji">🚧</div>'+
+      '<h3>התוכן למבחן הזה יתווסף בקרוב!</h3>'+
+      '<p class="muted">אבא/אמא מביאים שאלות לדוגמה, ואנחנו ממלאים את התוכן.</p></div>';
+    show("subject");
+    return;
+  }
+  list.forEach(t=>{
     let ans=0;
     t.questions.forEach((_,qi)=>{ if(db.progress[t.id+"-"+qi]) ans++; });
     const pct = Math.round(ans/t.questions.length*100);
