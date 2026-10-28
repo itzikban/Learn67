@@ -57,7 +57,7 @@ const fail = (msg) => errors.push(msg);
 
 // מיפוי מקור־השדות שהרנדרר (buildFields) קורא לכל סוג — חייב להתאים לקוד!
 const FIELD_SOURCE = {
-  num: "fields", multi: "fields", numparent: "fields",
+  num: "fields", multi: "fields", numparent: "fields", text: "fields",
   word: "finals",
   expr: "fields", exprnum: "expr+nums",
   multiok: "nfields", mixed: "fields",
