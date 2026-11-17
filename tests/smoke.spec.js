@@ -34,7 +34,7 @@ test("every topic opens with 10 questions and answer widgets", async ({ page }) 
     for (let j = 0; j < 10; j++) {
       await expect(cards.nth(j).locator(".ansfield, .cmpbtn, .parentonly-note").first()).toBeVisible();
     }
-    await page.locator('[data-back="subject"]').click();
+    await page.locator('#view-topic [data-back="subject"]').click();
     await expect(page.locator("#view-subject.active")).toBeVisible();
   }
 });
@@ -68,4 +68,56 @@ test("three wrong attempts auto-mark needs-review", async ({ page }) => {
     await card.getByRole("button", { name: /בדוק/ }).click();
   }
   await expect(card.locator(".badge.yellow")).toBeVisible();
+});
+
+// ---------- אנגלית (t6, מבחן 13.12.2026) ----------
+async function openTestCard(page, index) {
+  await page.locator("#testsBoard .card.test").nth(index).click();
+  await expect(page.locator("#view-subject.active")).toBeVisible();
+}
+
+test("english test (t6) opens with 7 topics of 10 questions each", async ({ page }) => {
+  await register(page);
+  await openTestCard(page, 5); // ממוין לפי תאריך: t6 (13.12) הוא הכרטיס השישי
+  await expect(page.locator("#subjectBody .card.tap")).toHaveCount(7);
+  for (let i = 0; i < 7; i++) {
+    await openTopic(page, i);
+    const cards = page.locator("#topicBody .qcard");
+    for (let j = 0; j < 10; j++) {
+      await expect(cards.nth(j).locator(".ansfield, .cmpbtn, .parentonly-note").first()).toBeVisible();
+    }
+    await page.locator('#view-topic [data-back="subject"]').click();
+    await expect(page.locator("#view-subject.active")).toBeVisible();
+  }
+});
+
+test("english choice answer marks correct", async ({ page }) => {
+  await register(page);
+  await openTestCard(page, 5);
+  await openTopic(page, 0); // אותיות — שאלה 1: האות הגדולה של a היא A
+  const card = page.locator("#topicBody .qcard").first();
+  await card.locator(".choicebtn", { hasText: "A" }).first().click();
+  await card.getByRole("button", { name: /בדוק/ }).click();
+  await expect(card.locator(".badge.green")).toBeVisible();
+});
+
+test("english number answer via numpad marks correct", async ({ page }) => {
+  await register(page);
+  await openTestCard(page, 5);
+  await openTopic(page, 3); // מספרים — שאלה 1: three -> 3
+  const card = page.locator("#topicBody .qcard").first();
+  await card.locator(".ansfield").click();
+  await page.locator("#numpad .np-key", { hasText: "3" }).click();
+  await card.getByRole("button", { name: /בדוק/ }).click();
+  await expect(card.locator(".badge.green")).toBeVisible();
+});
+
+test("english text answer is case-insensitive", async ({ page }) => {
+  await register(page);
+  await openTestCard(page, 5);
+  await openTopic(page, 5); // חיות — שאלה 8 (אינדקס 7): dog, מוקלד עם אות גדולה
+  const card = page.locator("#topicBody .qcard").nth(7);
+  await card.locator(".textfield").fill("Dog");
+  await card.getByRole("button", { name: /בדוק/ }).click();
+  await expect(card.locator(".badge.green")).toBeVisible();
 });
